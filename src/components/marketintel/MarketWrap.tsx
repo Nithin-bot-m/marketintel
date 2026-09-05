@@ -95,6 +95,7 @@ export default function MarketWrap() {
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
+          index="02"
           kicker="The Daily Wrap"
           title={
             <>

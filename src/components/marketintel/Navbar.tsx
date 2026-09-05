@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-motion";
+import { motion, useScroll, useSpring, useMotionValueEvent, AnimatePresence } from "framer-motion";
 import { TrendingUp, Menu, X, ArrowUpRight, Network } from "lucide-react";
 import { NETWORK } from "@/lib/market-data";
 
@@ -17,7 +17,8 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [netOpen, setNetOpen] = useState(false);
-  const { scrollY } = useScroll();
+  const { scrollY, scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 28, mass: 0.4 });
 
   useMotionValueEvent(scrollY, "change", (v) => setScrolled(v > 24));
 
@@ -144,6 +145,12 @@ export default function Navbar() {
             </button>
           </div>
         </nav>
+        {/* scroll progress */}
+        <motion.div
+          style={{ scaleX: progress }}
+          className="absolute inset-x-0 bottom-0 h-[2px] origin-left bg-gradient-to-r from-amber-400 via-amber-300 to-violet-400"
+          aria-hidden
+        />
       </motion.header>
 
       {/* Mobile menu */}

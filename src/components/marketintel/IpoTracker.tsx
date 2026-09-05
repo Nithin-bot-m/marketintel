@@ -102,6 +102,7 @@ export default function IpoTracker() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-8">
           <SectionHeading
+            index="04"
             kicker="IPO Intelligence"
             title={
               <>

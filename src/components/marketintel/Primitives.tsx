@@ -33,11 +33,13 @@ export function SectionHeading({
   kicker,
   title,
   sub,
+  index,
   align = "left",
 }: {
   kicker: string;
   title: ReactNode;
   sub?: string;
+  index?: string;
   align?: "left" | "center";
 }) {
   return (
@@ -45,6 +47,11 @@ export function SectionHeading({
       <div
         className={`mb-4 flex items-center gap-3 ${align === "center" ? "justify-center" : ""}`}
       >
+        {index && (
+          <span className="font-data rounded-md border border-amber-400/25 bg-amber-400/[0.07] px-2 py-1 text-[10px] font-bold leading-none text-amber-300">
+            {index}
+          </span>
+        )}
         <span className="h-px w-8 bg-gradient-to-r from-amber-400 to-transparent" />
         <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-amber-400">
           {kicker}

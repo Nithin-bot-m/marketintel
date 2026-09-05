@@ -21,3 +21,23 @@ Stage Summary:
 - Deliverable: MarketIntel v1.0 homepage running on Next.js 16 at / (only route), dark OLED glassmorphism + WebGL 3D hero, live simulated ticker via /api/market.
 - All content follows the PDF plan: MarketIntel categories, T1 source attribution, SEBI-safe informational positioning, ISD Intelligence Network footer, 4-channel strip (MarketIntel LIVE, others PHASE 2).
 - Key files: src/app/page.tsx, src/app/layout.tsx, src/app/globals.css, src/app/api/market/route.ts, src/lib/market-data.ts, src/components/marketintel/* (12 components).
+
+---
+Task ID: 2
+Agent: Main agent (Super Z)
+Task: MarketIntel v2 overhaul per user feedback — remove moving blocks in hero, stylish animated candle charts, custom dot cursor, whole-page impressiveness pass
+
+Work Log:
+- Deleted Hero3D.tsx (three.js instanced bar terrain + floating monoliths) — no more up/down moving blocks.
+- Built CandleChart.tsx: cinematic 2D-canvas streaming candlestick engine — new candle every 1.35s with 9 ticks/sec, continuous leftward tape glide (no jumps), lerped auto-fit Y-scale, gradient-glow emerald/rose candles, glowing gold EMA-9, volume bars, grid + mono price/time labels (09:15 session clock), last-price dashed line + pulsing dot + rounded price tag, mouse crosshair with cursor price tag and two-line O/H/L/C pill, subtle mouse parallax, DPR-aware via offsetWidth + ResizeObserver, prefers-reduced-motion respected, catch-up guards for hidden tabs, onTick callback (throttled 240ms).
+- Rebuilt Hero.tsx around the tape: layered scrims for legibility, word-stagger 3D headline, conic-border glass HUD card (live LTP with keyed roll animation, +%, candles-drawn counter, T1 feed note) driven by CandleChart onTick, CTA with data-cursor-label, stat strip, TickerTape pinned at bottom. Fixed framer-motion popLayout DOM accumulation by switching to keyed remount.
+- Built Cursor.tsx: custom dot cursor — instant glowing dot + spring-trailing ring; expands over a/button/[data-cursor]; amber label disc via data-cursor-label (hero CTA "READ"); press shrink; touch-only devices excluded via useSyncExternalStore coarse-pointer check (robust in headless + real devices); CSS cursor:none under (hover:hover) and (pointer:fine).
+- Built MiniCandles.tsx: per-index canvas candle charts (deterministic pseudo-OHLC from spark series), staggered rise-in on scroll into view, breathing glow + pulse dot on last candle. Replaced SVG sparklines in Indices cards; copy updated to "live candles retrace".
+- Editorial system pass: SectionHeading index prop (01–07 across MarketWrap, IntelFeed, IpoTracker, Flows, Topics, Pipeline), Navbar scroll progress bar (gold→violet, springed scaleX), page-level BackdropFX (fixed aurora gold/violet/emerald drift blobs, dot-grid mask, film-grain noise layer, bottom vignette).
+- globals.css: cursor:none media rule, aurora keyframes + noise-layer, reduced-motion extended to auroras.
+- Lint fixed: ref-writes-during-render (CandleChart/MiniCandles) moved into effects; Cursor enabled state via useSyncExternalStore.
+- Browser-verified (agent-browser): hero tape streams + glides, crosshair + OHLC pill (restructured to 2-line after overlap), HUD live updates (₹ values tick), cursor dot/ring mounts and follows, index mini-candles animate, section numbers 01/02 correct, IPO tabs (Live/Upcoming/Listed) switch, newsletter submit shows success, mobile 390px hero clean, no console errors; dev.log clean 200s.
+
+Stage Summary:
+- Deliverable: MarketIntel v2 on Next.js 16 at / — block-free hero with live streaming candlestick tape + crosshair, custom dot cursor site-wide, candle-motif index cards, editorial numbering, scroll progress, aurora backdrop.
+- Key files: src/components/marketintel/{CandleChart,Cursor,MiniCandles,Hero,Indices,Primitives,Navbar}.tsx, src/app/page.tsx, src/app/globals.css; Hero3D.tsx removed.

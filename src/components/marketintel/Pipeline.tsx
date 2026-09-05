@@ -51,6 +51,7 @@ export default function Pipeline() {
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-[380px] w-[860px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/[0.05] blur-[130px]" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
+          index="07"
           align="center"
           kicker="How It's Made"
           title={

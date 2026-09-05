@@ -48,6 +48,7 @@ export default function Flows() {
           {/* copy */}
           <div className="lg:col-span-2">
             <SectionHeading
+              index="05"
               kicker="FII / DII Flows"
               title={
                 <>

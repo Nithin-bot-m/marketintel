@@ -1,59 +1,117 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import { useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
-import { ArrowRight, ShieldCheck, Radio, Database } from "lucide-react";
+import { ArrowRight, ShieldCheck, Radio, Database, Activity } from "lucide-react";
 import TickerTape from "./TickerTape";
-
-const Hero3D = dynamic(() => import("./Hero3D"), {
-  ssr: false,
-  loading: () => (
-    <div className="absolute inset-0 flex items-center justify-center bg-[#05070d]">
-      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-        <span className="h-2 w-2 animate-pulse-dot rounded-full bg-amber-400" />
-        Rendering market terrain…
-      </div>
-    </div>
-  ),
-});
+import CandleChart, { type CandleTick } from "./CandleChart";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
 const container = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.12, delayChildren: 0.35 } },
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.3 } },
 };
 const item = {
-  hidden: { opacity: 0, y: 34 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.9, ease } },
+  hidden: { opacity: 0, y: 30 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.85, ease } },
 };
 
+const HEADLINE_A = ["Indian", "markets,"];
+const HEADLINE_B = ["decoded", "daily."];
+
+function fmtINR(v: number) {
+  return Math.round(v).toLocaleString("en-IN");
+}
+
 export default function Hero() {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const contentY = useTransform(scrollYProgress, [0, 1], [0, 140]);
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
-  const canvasScale = useTransform(scrollYProgress, [0, 1], [1, 1.12]);
+  const contentY = useTransform(scrollYProgress, [0, 1], [0, 130]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.72], [1, 0]);
+  const chartScale = useTransform(scrollYProgress, [0, 1], [1, 1.07]);
+  const chartOpacity = useTransform(scrollYProgress, [0, 0.85], [1, 0.18]);
+
+  const [live, setLive] = useState<CandleTick>({ price: 24700, changePct: 0, count: 0 });
+  const [prevPrice, setPrevPrice] = useState(24700);
+  const upTick = live.price >= prevPrice;
+
+  const handleTick = (t: CandleTick) => {
+    setPrevPrice((p) => (t.price !== p ? t.price : p));
+    setLive(t);
+  };
 
   return (
-    <section ref={ref} id="top" className="relative min-h-[100svh] overflow-hidden bg-[#05070d]">
-      {/* 3D canvas with scroll-driven zoom */}
-      <motion.div style={{ scale: canvasScale }} className="absolute inset-0">
-        <Hero3D />
+    <section ref={ref} id="top" className="relative min-h-[100svh] overflow-hidden">
+      {/* ---- live candlestick tape ---- */}
+      <motion.div style={{ scale: chartScale, opacity: chartOpacity }} className="absolute inset-0">
+        <CandleChart onTick={handleTick} />
       </motion.div>
 
-      {/* cinematic vignette + top fade for nav legibility */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(5,7,13,0.55)_78%,rgba(5,7,13,0.9)_100%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[#05070d]/85 to-transparent" />
+      {/* ---- cinematic scrims (text legibility, never hiding the tape fully) ---- */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_72%_38%,transparent_0%,rgba(5,7,13,0.34)_62%,rgba(5,7,13,0.9)_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(5,7,13,0.96)_0%,rgba(5,7,13,0.86)_30%,rgba(5,7,13,0.42)_58%,rgba(5,7,13,0.05)_80%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[#05070d]/90 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#05070d] to-transparent" />
 
-      {/* content */}
+      {/* ---- live quote HUD ---- */}
+      <motion.div
+        initial={{ opacity: 0, x: 40 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 1.05, duration: 0.9, ease }}
+        className="absolute right-6 top-[16vh] z-10 hidden lg:block xl:right-10"
+      >
+        <div className="conic-border glass-strong w-[236px] rounded-2xl p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center justify-between">
+            <span className="font-data text-[10px] font-semibold tracking-[0.2em] text-muted-foreground">
+              NIFTY 50 · FUT
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-2 py-0.5">
+              <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-emerald-400" />
+              <span className="font-data text-[9px] font-bold tracking-widest text-emerald-400">
+                LIVE
+              </span>
+            </span>
+          </div>
+          <motion.div
+            key={live.price}
+            initial={{ y: upTick ? 10 : -10, opacity: 0.35 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.24, ease }}
+            className="font-data mt-2 text-[26px] font-bold leading-none tracking-tight text-white"
+          >
+            ₹{fmtINR(live.price)}
+          </motion.div>
+          <div
+            className={`font-data mt-2 inline-flex items-center gap-1.5 text-xs font-bold ${
+              live.changePct >= 0 ? "text-emerald-400" : "text-rose-400"
+            }`}
+          >
+            <Activity className="h-3.5 w-3.5" />
+            {live.changePct >= 0 ? "+" : ""}
+            {live.changePct.toFixed(2)}% · sim feed
+          </div>
+          {/* micro tape */}
+          <div className="mt-4 border-t border-white/[0.08] pt-3">
+            <div className="flex items-center justify-between font-data text-[10px] text-muted-foreground">
+              <span>Candles drawn</span>
+              <span className="text-amber-300">{live.count}</span>
+            </div>
+            <div className="mt-1.5 flex items-center justify-between font-data text-[10px] text-muted-foreground">
+              <span>Feed</span>
+              <span className="text-foreground/70">T1 · NSE / BSE</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ---- content ---- */}
       <motion.div
         style={{ y: contentY, opacity: contentOpacity }}
         className="relative z-10 mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-center px-4 pb-40 pt-28 sm:px-6 lg:px-8"
       >
         <motion.div variants={container} initial="hidden" animate="show" className="max-w-3xl">
-          <motion.div variants={item} className="mb-6 flex flex-wrap items-center gap-3">
+          <motion.div variants={item} className="mb-7 flex flex-wrap items-center gap-3">
             <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-foreground/90">
               <Radio className="h-3.5 w-3.5 text-emerald-400" />
               <span className="relative flex h-1.5 w-1.5">
@@ -66,7 +124,7 @@ export default function Hero() {
               <Database className="h-3.5 w-3.5 text-amber-400" />
               Built on T1 official sources
             </span>
-            <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-foreground/90">
+            <span className="glass hidden items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-foreground/90 sm:inline-flex">
               <ShieldCheck className="h-3.5 w-3.5 text-violet-400" />
               100% informational · zero tips
             </span>
@@ -74,11 +132,34 @@ export default function Hero() {
 
           <motion.h1
             variants={item}
-            className="font-heading text-[13vw] font-bold leading-[0.98] tracking-tight sm:text-6xl md:text-7xl lg:text-[5.2rem]"
+            className="font-heading text-[12.5vw] font-bold leading-[0.98] tracking-tight sm:text-7xl lg:text-[5.4rem]"
           >
-            <span className="text-gradient-frost">Indian markets,</span>
-            <br />
-            <span className="text-gradient-gold">decoded daily.</span>
+            <span className="block">
+              {HEADLINE_A.map((wd, i) => (
+                <motion.span
+                  key={wd}
+                  initial={{ opacity: 0, y: 46, rotateX: 40 }}
+                  animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                  transition={{ delay: 0.4 + i * 0.09, duration: 0.9, ease }}
+                  className="text-gradient-frost mr-[0.22em] inline-block"
+                >
+                  {wd}
+                </motion.span>
+              ))}
+            </span>
+            <span className="block">
+              {HEADLINE_B.map((wd, i) => (
+                <motion.span
+                  key={wd}
+                  initial={{ opacity: 0, y: 46, rotateX: 40 }}
+                  animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                  transition={{ delay: 0.58 + i * 0.09, duration: 0.9, ease }}
+                  className="text-gradient-gold mr-[0.22em] inline-block"
+                >
+                  {wd}
+                </motion.span>
+              ))}
+            </span>
           </motion.h1>
 
           <motion.p
@@ -93,6 +174,7 @@ export default function Hero() {
           <motion.div variants={item} className="mt-9 flex flex-wrap items-center gap-4">
             <a
               href="#wrap"
+              data-cursor-label="Read"
               className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-7 py-3.5 text-sm font-bold text-black shadow-[0_0_36px_rgba(245,158,11,0.4)] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_54px_rgba(245,158,11,0.6)]"
             >
               Read Today&apos;s Wrap

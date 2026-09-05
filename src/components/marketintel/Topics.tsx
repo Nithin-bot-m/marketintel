@@ -36,6 +36,7 @@ export default function Topics() {
       <div className="pointer-events-none absolute right-1/4 top-10 h-[300px] w-[500px] rounded-full bg-amber-500/[0.04] blur-[110px]" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
+          index="06"
           align="center"
           kicker="Evergreen Cluster Pages"
           title={

@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, ShieldCheck, Radio, Database, Activity } from "lucide-react";
 import TickerTape from "./TickerTape";
 import CandleChart, { type CandleTick } from "./CandleChart";
+import type { MarketSnapshot, MarketStatus } from "@/lib/types";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -24,6 +25,20 @@ function fmtINR(v: number) {
   return Math.round(v).toLocaleString("en-IN");
 }
 
+function asOfClock(ts?: number) {
+  if (!ts) return "";
+  try {
+    return new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date(ts));
+  } catch {
+    return "";
+  }
+}
+
 export default function Hero() {
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
@@ -32,20 +47,45 @@ export default function Hero() {
   const chartScale = useTransform(scrollYProgress, [0, 1], [1, 1.07]);
   const chartOpacity = useTransform(scrollYProgress, [0, 0.85], [1, 0.18]);
 
-  const [live, setLive] = useState<CandleTick>({ price: 24700, changePct: 0, count: 0 });
-  const [prevPrice, setPrevPrice] = useState(24700);
-  const upTick = live.price >= prevPrice;
+  const [status, setStatus] = useState<MarketStatus | null>(null);
+  const [live, setLive] = useState<CandleTick | null>(null);
+  const [prevPrice, setPrevPrice] = useState(0);
+  const upTick = live ? live.price >= prevPrice : true;
+
+  // one light poll drives the status chip (chart has its own feed)
+  useEffect(() => {
+    let alive = true;
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/market", { cache: "no-store" });
+        if (!res.ok) return;
+        const data: MarketSnapshot = await res.json();
+        if (alive) setStatus(data.status);
+      } catch {
+        /* keep last */
+      }
+    };
+    void poll();
+    const id = setInterval(poll, 30_000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, []);
 
   const handleTick = (t: CandleTick) => {
     setPrevPrice((p) => (t.price !== p ? t.price : p));
     setLive(t);
   };
 
+  const open = status?.state === "open";
+  const preopen = status?.state === "preopen";
+
   return (
     <section ref={ref} id="top" className="relative min-h-[100svh] overflow-hidden">
-      {/* ---- live candlestick tape ---- */}
+      {/* ---- live candlestick tape (real NSE 1-minute bars) ---- */}
       <motion.div style={{ scale: chartScale, opacity: chartOpacity }} className="absolute inset-0">
-        <CandleChart onTick={handleTick} />
+        <CandleChart onTick={handleTick} status={status} />
       </motion.div>
 
       {/* ---- cinematic scrims (text legibility, never hiding the tape fully) ---- */}
@@ -64,43 +104,90 @@ export default function Hero() {
         <div className="conic-border glass-strong w-[236px] rounded-2xl p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)]">
           <div className="flex items-center justify-between">
             <span className="font-data text-[10px] font-semibold tracking-[0.2em] text-muted-foreground">
-              NIFTY 50 · FUT
+              NIFTY 50 · SPOT
             </span>
-            <span className="flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-2 py-0.5">
-              <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-emerald-400" />
-              <span className="font-data text-[9px] font-bold tracking-widest text-emerald-400">
-                LIVE
+            {status ? (
+              <span
+                className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 ${
+                  open
+                    ? "bg-emerald-400/10"
+                    : preopen
+                      ? "bg-amber-400/10"
+                      : "bg-white/[0.06]"
+                }`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    open
+                      ? "animate-pulse-dot bg-emerald-400"
+                      : preopen
+                        ? "animate-pulse-dot bg-amber-400"
+                        : "bg-amber-400/80"
+                  }`}
+                />
+                <span
+                  className={`font-data text-[9px] font-bold tracking-widest ${
+                    open ? "text-emerald-400" : "text-amber-300/90"
+                  }`}
+                >
+                  {status.label}
+                </span>
               </span>
-            </span>
+            ) : (
+              <span className="h-4 w-14 animate-pulse rounded-full bg-white/[0.08]" />
+            )}
           </div>
-          <motion.div
-            key={live.price}
-            initial={{ y: upTick ? 10 : -10, opacity: 0.35 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.24, ease }}
-            className="font-data mt-2 text-[26px] font-bold leading-none tracking-tight text-white"
-          >
-            ₹{fmtINR(live.price)}
-          </motion.div>
-          <div
-            className={`font-data mt-2 inline-flex items-center gap-1.5 text-xs font-bold ${
-              live.changePct >= 0 ? "text-emerald-400" : "text-rose-400"
-            }`}
-          >
-            <Activity className="h-3.5 w-3.5" />
-            {live.changePct >= 0 ? "+" : ""}
-            {live.changePct.toFixed(2)}% · sim feed
-          </div>
+
+          {live ? (
+            <>
+              <motion.div
+                key={live.price}
+                initial={{ y: upTick ? 10 : -10, opacity: 0.35 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.24, ease }}
+                className="font-data mt-2 text-[26px] font-bold leading-none tracking-tight text-white"
+              >
+                ₹{fmtINR(live.price)}
+              </motion.div>
+              <div
+                className={`font-data mt-2 inline-flex items-center gap-1.5 text-xs font-bold ${
+                  live.changePct >= 0 ? "text-emerald-400" : "text-rose-400"
+                }`}
+              >
+                <Activity className="h-3.5 w-3.5" />
+                {live.changePct >= 0 ? "+" : ""}
+                {live.changePct.toFixed(2)}% vs prev close
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="font-data mt-2 text-[26px] font-bold leading-none tracking-tight text-white/40">
+                — — —
+              </div>
+              <div className="mt-2 h-3 w-32 animate-pulse rounded-full bg-white/[0.07]" />
+            </>
+          )}
+
           {/* micro tape */}
           <div className="mt-4 border-t border-white/[0.08] pt-3">
             <div className="flex items-center justify-between font-data text-[10px] text-muted-foreground">
-              <span>Candles drawn</span>
-              <span className="text-amber-300">{live.count}</span>
+              <span>Session bars</span>
+              <span className="text-amber-300">{live ? live.count : "—"}</span>
             </div>
             <div className="mt-1.5 flex items-center justify-between font-data text-[10px] text-muted-foreground">
               <span>Feed</span>
-              <span className="text-foreground/70">T1 · NSE / BSE</span>
+              <span className="text-foreground/70">
+                NSE{live?.live ? " · streaming" : " · last session"}
+              </span>
             </div>
+            {status && !open && (
+              <div className="mt-1.5 flex items-center justify-between font-data text-[10px] text-muted-foreground">
+                <span>Clock</span>
+                <span className="text-foreground/70">
+                  {status.istTime} IST
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
@@ -118,11 +205,17 @@ export default function Hero() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
               </span>
-              Markets live · NSE · BSE
+              {status
+                ? open
+                  ? "Markets live · NSE · BSE"
+                  : status.label === "PRE-OPEN"
+                    ? "Pre-open · session at 9:15"
+                    : "Markets closed · next bell 9:15"
+                : "Syncing market clock…"}
             </span>
             <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-foreground/90">
               <Database className="h-3.5 w-3.5 text-amber-400" />
-              Built on T1 official sources
+              Live exchange feed · NSE / BSE
             </span>
             <span className="glass hidden items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-foreground/90 sm:inline-flex">
               <ShieldCheck className="h-3.5 w-3.5 text-violet-400" />
@@ -174,7 +267,6 @@ export default function Hero() {
           <motion.div variants={item} className="mt-9 flex flex-wrap items-center gap-4">
             <a
               href="#wrap"
-              data-cursor-label="Read"
               className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-7 py-3.5 text-sm font-bold text-black shadow-[0_0_36px_rgba(245,158,11,0.4)] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_54px_rgba(245,158,11,0.6)]"
             >
               Read Today&apos;s Wrap

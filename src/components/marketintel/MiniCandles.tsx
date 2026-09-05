@@ -2,37 +2,19 @@
 
 import { useEffect, useRef } from "react";
 import { useInView } from "framer-motion";
-
-interface OHLC {
-  o: number;
-  h: number;
-  l: number;
-  c: number;
-}
-
-/** Deterministic pseudo-OHLC derived from a close series (stable across renders). */
-function buildOHLC(data: number[]): OHLC[] {
-  return data.map((c, i) => {
-    const o = i === 0 ? c * 0.9975 : data[i - 1];
-    const seed = Math.abs(Math.sin(i * 12.9898 + c * 0.13) * 43758.5453) % 1;
-    const seed2 = Math.abs(Math.sin(i * 78.233 + c * 0.31) * 24634.6345) % 1;
-    const wickBase = Math.abs(c - o) + c * 0.0035;
-    const h = Math.max(o, c) + wickBase * (0.35 + seed * 0.65);
-    const l = Math.min(o, c) - wickBase * (0.35 + seed2 * 0.65);
-    return { o, h, l, c };
-  });
-}
+import type { CandleBar } from "@/lib/types";
 
 /**
- * Compact animated candlestick chart — candles rise in sequence when the
- * card scrolls into view, then the last candle "breathes" with a soft glow.
+ * Compact animated candlestick chart rendering REAL OHLC bars from the
+ * exchange feed — candles rise in sequence when the card scrolls into view,
+ * then the last candle "breathes" with a soft glow.
  */
 export default function MiniCandles({
-  data,
+  candles,
   up,
   className,
 }: {
-  data: number[];
+  candles: CandleBar[] | null; // null = feed still loading
   up: boolean;
   className?: string;
 }) {
@@ -49,10 +31,30 @@ export default function MiniCandles({
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
+    if (!candles || candles.length < 4) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const ohlc = buildOHLC(data);
+    // downsample to at most ~34 bars so 1-minute sessions stay readable
+    const MAXB = 34;
+    let ohlc = candles;
+    if (candles.length > MAXB) {
+      const step = Math.ceil(candles.length / MAXB);
+      const agg: CandleBar[] = [];
+      for (let i = 0; i < candles.length; i += step) {
+        const grp = candles.slice(i, i + step);
+        agg.push({
+          t: grp[0].t,
+          o: grp[0].o,
+          h: Math.max(...grp.map((g) => g.h)),
+          l: Math.min(...grp.map((g) => g.l)),
+          c: grp[grp.length - 1].c,
+          v: grp.reduce((a, g) => a + g.v, 0),
+        });
+      }
+      ohlc = agg;
+    }
+
     const n = ohlc.length;
     const UP = "#10b981";
     const DOWN = "#f43f5e";
@@ -77,8 +79,8 @@ export default function MiniCandles({
 
     let raf = 0;
     const t0 = performance.now();
-    const STAGGER = 75;
-    const GROW = 480;
+    const STAGGER = 70;
+    const GROW = 460;
 
     const easeOut = (p: number) => 1 - Math.pow(1 - p, 3);
 
@@ -184,11 +186,14 @@ export default function MiniCandles({
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [data, up]);
+  }, [candles, up]);
 
   return (
     <div ref={wrapRef} className={className} aria-hidden="true">
       <canvas ref={canvasRef} className="h-full w-full" />
+      {(!candles || candles.length < 4) && (
+        <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.05]" />
+      )}
     </div>
   );
 }

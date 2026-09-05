@@ -115,7 +115,10 @@ export default function Footer() {
             news-and-education property of ISD Info Solutions. All content on this page is strictly
             informational and educational; it does not constitute investment advice, research
             recommendations, or solicitation to trade in securities as regulated by SEBI. Market
-            values shown are simulated demo figures for illustration of the product experience.
+            values shown are real exchange quotes (NSE / BSE and global reference instruments)
+            served via our market-data provider and may be delayed up to 15 minutes. Institutional
+            flows, IPO records and macro prints are compiled from official exchange, depository
+            and regulator disclosures, with sources and as-of dates shown inline.
             Consult a SEBI-registered investment adviser before making financial decisions.
           </p>
         </div>

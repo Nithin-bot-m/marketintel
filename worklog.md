@@ -41,3 +41,31 @@ Work Log:
 Stage Summary:
 - Deliverable: MarketIntel v2 on Next.js 16 at / — block-free hero with live streaming candlestick tape + crosshair, custom dot cursor site-wide, candle-motif index cards, editorial numbering, scroll progress, aurora backdrop.
 - Key files: src/components/marketintel/{CandleChart,Cursor,MiniCandles,Hero,Indices,Primitives,Navbar}.tsx, src/app/page.tsx, src/app/globals.css; Hero3D.tsx removed.
+
+---
+Task ID: 3
+Agent: Main agent (Super Z)
+Task: Remove spring-trailing ring from cursor; audit + convert all page data to live/authentic sources
+
+Work Log:
+- Cursor.tsx: deleted trailing-ring layer (z-9998) + spring xy + label variant entirely; now a single instant-follow dot (z-9999) that scales up amber over interactive elements and dips on press. Browser-verified: 0 ring nodes, 1 dot node.
+- Audited every data surface: /api/market was an in-memory random-walk simulator, hero candle engine was synthetic, indices/sparks/hardcoded wrap/IPO/flow/macro figures were fabricated. All replaced.
+- Built src/lib/yahoo.ts (server-only): Yahoo Finance client with fc.yahoo.com cookie handshake, browser UA/Referer headers, query1/query2 host flip, 350ms pacing, single-flight TTL caches (quotes 45s, 1m candles 60s, 5m 150s, breadth 300s), stale-on-error + 45s fail backoff. NSE direct API tested (403 Akamai) and rejected; spark API capped at 20 symbols/call so basket is 3 batches.
+- Rewrote /api/market to serve a real snapshot: 4 indices, 6 sectors, India VIX, 18-symbol tape (stocks + USD/INR + Brent + COMEX gold + VIX), breadth + top movers derived from a 50-name NIFTY basket, and IST market-status state machine (preopen/open/closed, next-bell label).
+- New /api/candles route: real OHLC bars (^NSEI 1m = 376 bars, Fri 09:15-15:30 IST) with symbol whitelist + interval/range validation.
+- CandleChart.tsx: full engine rewrite from synthetic random walk to real-feed tape - seeds from /api/candles, re-polls every 20s with born-time fade continuity, viewT glides with the clock when open / gentle camera sway when closed, EMA-9 over real closes, real 15-min IST time gridlines, crosshair OHLC pill with bar time, volume bars auto-hidden for zero-volume indices, onTick emits real price/changePct vs real prevClose. No synthetic ticks at any point.
+- TickerTape: live quotes + interleaved status cell (LIVE/PRE-OPEN/CLOSED + IST clock), shimmer skeleton until first real payload (no fake initial numbers).
+- Hero: HUD shows NIFTY 50 SPOT with real LTP roll, "+x.xx% vs prev close", real session bar count (376), NSE streaming/last-session feed line, market-status chip (amber MARKET CLOSED / green MARKET LIVE), IST clock row; "sim feed" wording removed.
+- Indices: live quotes via /api/market + real 5m OHLC candles per card via /api/candles; count-up continues from previous value; chip shows "Live exchange feed HH:MM IST" or "Last close Fri, 4 Sep 15:39 IST"; skeleton cards while loading.
+- MiniCandles: now takes real CandleBar[] (downsampled <=34 bars), pseudo-OHLC generator deleted.
+- MarketWrap: live-derived headline (Nifty/Sensex real figures), auto-generated rows from breadth/sectors/VIX/movers, verified Sep-4 session context (Sensex +363 ends 4-day streak; cross-validates live +362.53), ordinal fix (3rd straight DII buy day).
+- market-data.ts purged of all fabricated numbers; now only VERIFIED static facts with source + as-of: FII/DII session provisionals (Sep 4: FII -3,111.94 / DII +8,930.12, 3-day DII streak), monthly FPI series Mar-Aug 2026 (record -1.18L Cr Mar -> +29,631 Cr Aug), real IPO board (Qualiance LIVE 12.51x, Prasol + ARCL upcoming, Priority Jewels listed +15%, NSE IPO watch), verified macro (repo 5.25% Aug 5, GST 1,99,853 Cr +14.8%, FX $729.33B, CPI FY27 proj 4.6%), 6 dated IntelFeed items with official source URLs (SEBI ESMA MoU 54/2026, RBI Aug MPC, circular extension, provisionals, TCS Q1 FY27, GMP explainer).
+- Flows: single-series verified FPI chart with red/green cells, "VERIFIED - OFFICIAL PROVISIONALS" chip (replaced "LIVE-ISH DEMO"), source/attribution box, arc narrative.
+- IpoTracker: real issues incl. kind chips + per-row notes + verified-as-of line; GMP shown only as "-" with strengthened compliance note.
+- Footer disclaimer: replaced "simulated demo figures" with live-quote + 15-min delay + official-disclosure attribution language.
+- Cross-validation: live feed matches independent press (Sensex +363, SBI Life/Tata Steel gainers, HCL Tech laggard, Nifty 23,897.70 close) - data confirmed authentic.
+- Verified via agent-browser at 1440px + 390px: hero tape, HUD, ticker status cell, indices real candles, wrap bento, IPO tabs, flows chart; dev.log/tsc/eslint all clean.
+
+Stage Summary:
+- Deliverable: MarketIntel v3 on Next.js 16 at / - dot-only custom cursor; every quote, candle, breadth, mover and status signal streams from the real exchange feed (Yahoo Finance server-side with cache + stale fallback); all non-API facts are dated, sourced, verified figures; zero simulated data remains.
+- Key files: src/lib/yahoo.ts (new), src/lib/types.ts (new), src/lib/market-data.ts, src/app/api/market/route.ts, src/app/api/candles/route.ts (new), src/components/marketintel/{Cursor,CandleChart,TickerTape,Hero,Indices,MiniCandles,MarketWrap,Flows,IpoTracker,IntelFeed,Footer}.tsx.

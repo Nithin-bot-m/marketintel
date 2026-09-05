@@ -1,20 +1,25 @@
 import { NextResponse } from "next/server";
-import { TICKER_BASE, walkTicker, type Ticker } from "@/lib/market-data";
+import { getSnapshot } from "@/lib/yahoo";
 
-// In-memory session state so the random-walk evolves rather than resets.
-let liveTickers: Ticker[] = TICKER_BASE.map((t) => ({ ...t }));
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
+// GET /api/market — live exchange snapshot (NSE/BSE quotes via Yahoo Finance).
+// All figures are real market data; `stale: true` signals last-good-cache fallback.
 export async function GET() {
-  liveTickers = liveTickers.map((t) => walkTicker(t));
-  return NextResponse.json(
-    {
-      ts: Date.now(),
-      tickers: liveTickers,
-    },
-    {
-      headers: {
-        "Cache-Control": "no-store",
+  try {
+    const snapshot = await getSnapshot();
+    return NextResponse.json(snapshot, {
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch (err) {
+    return NextResponse.json(
+      {
+        error: "upstream feed unavailable",
+        detail: err instanceof Error ? err.message : String(err),
+        ts: Date.now(),
       },
-    }
-  );
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 }

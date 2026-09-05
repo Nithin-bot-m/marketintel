@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame, CalendarClock, PartyPopper, TrendingUp, TrendingDown, Info } from "lucide-react";
-import { IPOS, type IPOItem } from "@/lib/market-data";
+import { IPOS, VERIFIED_AS_OF, type IPOItem } from "@/lib/market-data";
 import { Reveal, SectionHeading } from "./Primitives";
 
 const TABS = [
@@ -13,6 +13,12 @@ const TABS = [
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
+
+function subMultiple(s?: string): number {
+  if (!s) return 0;
+  const v = parseFloat(s.replace("×", "").replace(",", ""));
+  return isFinite(v) ? v : 0;
+}
 
 function IpoRow({ ipo, i }: { ipo: IPOItem; i: number }) {
   return (
@@ -29,14 +35,24 @@ function IpoRow({ ipo, i }: { ipo: IPOItem; i: number }) {
             {ipo.name.slice(0, 2).toUpperCase()}
           </span>
           <div>
-            <div className="text-sm font-semibold text-white">{ipo.name}</div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-white">{ipo.name}</span>
+              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[9px] font-bold tracking-wider text-muted-foreground">
+                {ipo.kind.toUpperCase()}
+              </span>
+            </div>
             <div className="font-data text-[11px] text-muted-foreground">
-              {ipo.status === "LIVE" && `Open · closes ${ipo.closes}`}
-              {ipo.status === "UPCOMING" && `Opens ${ipo.opens}`}
+              {ipo.status === "LIVE" && `Open · ${ipo.window}`}
+              {ipo.status === "UPCOMING" && ipo.window}
               {ipo.status === "LISTED" && `Listed ${ipo.listedAt}`}
             </div>
           </div>
         </div>
+        {ipo.note && (
+          <div className="mt-1.5 pl-[46px] text-[11px] leading-snug text-muted-foreground/80">
+            {ipo.note}
+          </div>
+        )}
       </div>
 
       <div className="lg:col-span-2">
@@ -46,12 +62,12 @@ function IpoRow({ ipo, i }: { ipo: IPOItem; i: number }) {
 
       <div className="lg:col-span-2">
         <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Lot</div>
-        <div className="font-data mt-1 text-sm font-semibold text-foreground/90">{ipo.lot} shares</div>
+        <div className="font-data mt-1 text-sm font-semibold text-foreground/90">{ipo.lot}</div>
       </div>
 
       {ipo.status === "LISTED" ? (
         <div className="lg:col-span-4">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Listing gain</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Listing vs issue</div>
           <div
             className={`font-data mt-1 inline-flex items-center gap-1.5 text-sm font-bold ${
               (ipo.listingGain ?? 0) >= 0 ? "text-emerald-300" : "text-rose-300"
@@ -59,7 +75,7 @@ function IpoRow({ ipo, i }: { ipo: IPOItem; i: number }) {
           >
             {(ipo.listingGain ?? 0) >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
             {(ipo.listingGain ?? 0) >= 0 ? "+" : ""}
-            {ipo.listingGain?.toFixed(1)}% vs band high
+            {(ipo.listingGain ?? 0).toFixed(1)}% · debut {ipo.note?.includes("₹230") ? "₹230 NSE" : "—"}
           </div>
         </div>
       ) : (
@@ -68,7 +84,7 @@ function IpoRow({ ipo, i }: { ipo: IPOItem; i: number }) {
             {ipo.status === "LIVE" ? "Subscribed" : "GMP"}
           </div>
           <div className="font-data mt-1 text-sm font-bold text-emerald-300">
-            {ipo.status === "LIVE" ? `${ipo.subscription.toFixed(2)}×` : ipo.gmp}
+            {ipo.status === "LIVE" ? ipo.subscription ?? "—" : ipo.gmp}
           </div>
         </div>
       )}
@@ -78,13 +94,13 @@ function IpoRow({ ipo, i }: { ipo: IPOItem; i: number }) {
           <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
             <motion.div
               initial={{ width: 0 }}
-              animate={{ width: `${Math.min(100, ipo.subscription * 9)}%` }}
+              animate={{ width: `${Math.min(100, subMultiple(ipo.subscription) * 8)}%` }}
               transition={{ duration: 1.1, delay: 0.2 + i * 0.07, ease: "easeOut" }}
               className="h-full rounded-full bg-gradient-to-r from-amber-400 to-emerald-400"
             />
           </div>
           <div className="mt-1.5 text-[10px] text-muted-foreground">
-            {ipo.status === "LIVE" ? `day-wise momentum` : "awaiting opening bell"}
+            {ipo.status === "LIVE" ? "day-wise momentum" : "awaiting opening bell"}
           </div>
         </div>
       )}
@@ -109,7 +125,7 @@ export default function IpoTracker() {
                 The IPO street, <span className="text-gradient-gold">tracked end-to-end</span>
               </>
             }
-            sub="Price bands, lots, subscription velocity, grey-market chatter and listing outcomes — compiled from exchange filings and SEBI disclosures. Educational data only; not a subscription recommendation."
+            sub="Price bands, lots, subscription velocity and listing outcomes — compiled from price-band filings, exchange issue pages and verified market press. Educational data only; not a subscription recommendation."
           />
           {/* tabs */}
           <Reveal delay={0.15}>
@@ -151,21 +167,28 @@ export default function IpoTracker() {
                 exit={{ opacity: 0 }}
                 className="glass rounded-2xl p-10 text-center text-sm text-muted-foreground"
               >
-                No {tab.toLowerCase()} issues on the street right now — check back at the next DRHP window.
+                No verified {tab.toLowerCase()} issues to show right now — the desk refreshes this
+                board each morning from the exchange issue pages.
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
         <Reveal delay={0.1} className="mt-8">
-          <div className="flex items-start gap-3 rounded-2xl border border-violet-400/15 bg-violet-400/[0.05] px-5 py-4">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              <span className="font-semibold text-foreground/85">Compliance note:</span> grey-market
-              premium (GMP) is an unofficial, unregulated over-the-counter quote. MarketIntel reports
-              it for completeness — SEBI does not regulate GMP and it should never be treated as an
-              expected listing outcome.
-            </p>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 font-data text-[10px] uppercase tracking-wider text-muted-foreground">
+              <span className="h-px w-8 bg-gradient-to-r from-amber-400 to-transparent" />
+              Compiled from RHP / price-band filings &amp; exchange notices · verified {VERIFIED_AS_OF}
+            </div>
+            <div className="flex items-start gap-3 rounded-2xl border border-violet-400/15 bg-violet-400/[0.05] px-5 py-4">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                <span className="font-semibold text-foreground/85">Compliance note:</span> grey-market
+                premium (GMP) is an unofficial, unregulated over-the-counter quote. MarketIntel only
+                publishes GMP where independently verified — SEBI does not regulate GMP and it should
+                never be treated as an expected listing outcome.
+              </p>
+            </div>
           </div>
         </Reveal>
       </div>

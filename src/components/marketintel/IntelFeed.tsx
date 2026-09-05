@@ -72,9 +72,15 @@ function ArticleCard({ a, i }: { a: IntelArticle; i: number }) {
             </span>
             <span>{a.readMins} min read</span>
           </div>
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-muted-foreground transition-all duration-300 group-hover:border-amber-400/50 group-hover:bg-amber-400/10 group-hover:text-amber-300">
+          <a
+            href={a.url}
+            target={a.url.startsWith("http") ? "_blank" : undefined}
+            rel={a.url.startsWith("http") ? "noreferrer" : undefined}
+            aria-label={`Open source: ${a.source}`}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-muted-foreground transition-all duration-300 group-hover:border-amber-400/50 group-hover:bg-amber-400/10 group-hover:text-amber-300"
+          >
             <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-          </span>
+          </a>
         </div>
 
         {/* attribution line — PDF rule: attribute clearly */}
@@ -103,7 +109,7 @@ export default function IntelFeed() {
                 Latest <span className="text-gradient-gold">signal</span>, zero noise
               </>
             }
-            sub="Every item carries its source and tier — T1 official (NSE, BSE, SEBI, RBI, PIB) or T2 trade press flagged for discovery only. Original analysis, clear attribution, no republication."
+            sub="Every item is a dated, verifiable release — T1 official (NSE, BSE, SEBI, RBI, PIB) or T2 desk analysis flagged for context. Original summaries, clear attribution, direct links to the source."
           />
           <Reveal delay={0.15}>
             <div className="glass flex items-center gap-3 rounded-2xl px-5 py-3.5">

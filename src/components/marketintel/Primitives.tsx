@@ -48,16 +48,16 @@ export function SectionHeading({
         className={`mb-4 flex items-center gap-3 ${align === "center" ? "justify-center" : ""}`}
       >
         {index && (
-          <span className="font-data rounded-md border border-amber-400/25 bg-amber-400/[0.07] px-2 py-1 text-[10px] font-bold leading-none text-amber-300">
+          <span className="font-data cyber-chamfer-sm border border-[var(--primary)]/40 bg-[var(--primary)]/[0.09] px-2.5 py-1 text-[10px] font-bold leading-none text-[var(--primary)] shadow-[0_0_12px_rgba(0,240,255,0.15)]">
             {index}
           </span>
         )}
-        <span className="h-px w-8 bg-gradient-to-r from-amber-400 to-transparent" />
-        <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-amber-400">
+        <span className="h-px w-8 bg-gradient-to-r from-[var(--primary)] to-transparent" />
+        <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-[var(--primary)]">
           {kicker}
         </span>
         {align === "center" && (
-          <span className="h-px w-8 bg-gradient-to-l from-amber-400 to-transparent" />
+          <span className="h-px w-8 bg-gradient-to-l from-[var(--primary)] to-transparent" />
         )}
       </div>
       <h2 className="font-heading text-3xl font-bold tracking-tight text-gradient-frost sm:text-4xl lg:text-[2.75rem] lg:leading-[1.12]">

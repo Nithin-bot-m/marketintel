@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useInView } from "framer-motion";
 import type { CandleBar } from "@/lib/types";
+import { useMarketTheme } from "./ThemeContext";
 
 /**
  * Compact animated candlestick chart rendering REAL OHLC bars from the
@@ -18,10 +19,16 @@ export default function MiniCandles({
   up: boolean;
   className?: string;
 }) {
+  const { theme } = useMarketTheme();
+  const themeRef = useRef(theme);
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const inView = useInView(wrapRef, { once: true, margin: "-40px" });
   const inViewRef = useRef(false);
+
+  useEffect(() => {
+    themeRef.current = theme;
+  }, [theme]);
 
   useEffect(() => {
     inViewRef.current = inView;
@@ -56,8 +63,16 @@ export default function MiniCandles({
     }
 
     const n = ohlc.length;
-    const UP = "#10b981";
-    const DOWN = "#f43f5e";
+    const UP =
+      themeRef.current === "cyberpunk" || themeRef.current === "matrix"
+        ? "#00ff66"
+        : "#10b981";
+    const DOWN =
+      themeRef.current === "cyberpunk"
+        ? "#ff0055"
+        : themeRef.current === "matrix"
+        ? "#ff3366"
+        : "#f43f5e";
     const col = up ? UP : DOWN;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 

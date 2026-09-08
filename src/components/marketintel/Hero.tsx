@@ -6,6 +6,7 @@ import { ArrowRight, ShieldCheck, Radio, Database, Activity } from "lucide-react
 import TickerTape from "./TickerTape";
 import CandleChart, { type CandleTick } from "./CandleChart";
 import type { MarketSnapshot, MarketStatus } from "@/lib/types";
+import { useMarketTheme } from "./ThemeContext";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -40,6 +41,7 @@ function asOfClock(ts?: number) {
 }
 
 export default function Hero() {
+  const { theme } = useMarketTheme();
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const contentY = useTransform(scrollYProgress, [0, 1], [0, 130]);
@@ -101,10 +103,20 @@ export default function Hero() {
         transition={{ delay: 1.05, duration: 0.9, ease }}
         className="absolute right-6 top-[16vh] z-10 hidden lg:block xl:right-10"
       >
-        <div className="conic-border glass-strong w-[236px] rounded-2xl p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)]">
+        <div
+          className={`conic-border glass-strong w-[244px] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)] transition-all ${
+            theme === "cyberpunk"
+              ? "cyber-chamfer cyber-card cyber-corner-tl cyber-corner-br border-cyan-400/40 glow-cyan"
+              : theme === "matrix"
+              ? "rounded-2xl border-emerald-400/40 glow-matrix"
+              : "rounded-2xl"
+          }`}
+        >
           <div className="flex items-center justify-between">
-            <span className="font-data text-[10px] font-semibold tracking-[0.2em] text-muted-foreground">
+            <span className="font-data text-[10px] font-bold tracking-[0.2em] text-[var(--primary)] flex items-center gap-1">
+              {theme === "cyberpunk" && <span className="text-pink-500">[</span>}
               NIFTY 50 · SPOT
+              {theme === "cyberpunk" && <span className="text-pink-500">]</span>}
             </span>
             {status ? (
               <span
@@ -247,7 +259,14 @@ export default function Hero() {
                   initial={{ opacity: 0, y: 46, rotateX: 40 }}
                   animate={{ opacity: 1, y: 0, rotateX: 0 }}
                   transition={{ delay: 0.58 + i * 0.09, duration: 0.9, ease }}
-                  className="text-gradient-gold mr-[0.22em] inline-block"
+                  className={`mr-[0.22em] inline-block ${
+                    theme === "cyberpunk"
+                      ? "glitch-text text-gradient-neon font-extrabold"
+                      : theme === "matrix"
+                      ? "text-emerald-400 font-extrabold"
+                      : "text-gradient-gold"
+                  }`}
+                  data-text={wd}
                 >
                   {wd}
                 </motion.span>
@@ -267,7 +286,13 @@ export default function Hero() {
           <motion.div variants={item} className="mt-9 flex flex-wrap items-center gap-4">
             <a
               href="#wrap"
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-7 py-3.5 text-sm font-bold text-black shadow-[0_0_36px_rgba(245,158,11,0.4)] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_54px_rgba(245,158,11,0.6)]"
+              className={`group relative inline-flex items-center gap-2 overflow-hidden px-7 py-3.5 text-sm font-bold text-black transition-all duration-300 hover:scale-[1.03] ${
+                theme === "cyberpunk"
+                  ? "cyber-chamfer-sm bg-gradient-to-r from-cyan-400 via-pink-400 to-yellow-400 shadow-[0_0_36px_rgba(0,240,255,0.45)] hover:shadow-[0_0_54px_rgba(0,240,255,0.7)]"
+                  : theme === "matrix"
+                  ? "rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-[0_0_36px_rgba(0,255,102,0.4)]"
+                  : "rounded-full bg-gradient-to-r from-amber-400 to-amber-500 shadow-[0_0_36px_rgba(245,158,11,0.4)]"
+              }`}
             >
               Read Today&apos;s Wrap
               <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -275,7 +300,9 @@ export default function Hero() {
             </a>
             <a
               href="#intel"
-              className="glass glass-hover inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold text-foreground"
+              className={`glass glass-hover inline-flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-foreground ${
+                theme === "cyberpunk" ? "cyber-chamfer-sm border-cyan-400/30" : "rounded-full"
+              }`}
             >
               Explore Intelligence Feed
             </a>
@@ -293,7 +320,17 @@ export default function Hero() {
             ].map((s) => (
               <div key={s.k} className="px-4 first:pl-0">
                 <dt className="order-2 mt-1 text-[11px] leading-snug text-muted-foreground">{s.k}</dt>
-                <dd className="font-heading order-1 text-3xl font-bold text-gradient-gold">{s.v}</dd>
+                <dd
+                  className={`font-heading order-1 text-3xl font-bold ${
+                    theme === "cyberpunk"
+                      ? "text-gradient-neon"
+                      : theme === "matrix"
+                      ? "text-emerald-400"
+                      : "text-gradient-gold"
+                  }`}
+                >
+                  {s.v}
+                </dd>
               </div>
             ))}
           </motion.dl>

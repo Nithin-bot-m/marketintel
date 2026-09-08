@@ -50,9 +50,51 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-:root {
+:root,
+[data-theme="cyberpunk"] {
   --radius: 1rem;
-  /* OLED dark — near-black blue-tinted base */
+  /* Cyberpunk 2077 Night-City Palette */
+  --background: #030509;
+  --foreground: #e6f9ff;
+  --card: rgba(0, 240, 255, 0.04);
+  --card-foreground: #e6f9ff;
+  --popover: #070a14;
+  --popover-foreground: #e6f9ff;
+  --primary: #00f0ff; /* Neon Cyber Cyan */
+  --primary-foreground: #010409;
+  --secondary: rgba(255, 0, 85, 0.08);
+  --secondary-foreground: #ffe6ee;
+  --muted: rgba(0, 240, 255, 0.06);
+  --muted-foreground: #6c91a9;
+  --accent: #ff0055; /* Laser Pink / Magenta */
+  --accent-foreground: #ffffff;
+  --destructive: #ff003c;
+  --border: rgba(0, 240, 255, 0.22);
+  --input: rgba(0, 240, 255, 0.25);
+  --ring: #00f0ff;
+  --chart-1: #00f0ff;
+  --chart-2: #00ff66;
+  --chart-3: #ff0055;
+  --chart-4: #fcee0a;
+  --chart-5: #9d00ff;
+  --sidebar: #070a14;
+  --sidebar-foreground: #e6f9ff;
+  --sidebar-primary: #00f0ff;
+  --sidebar-primary-foreground: #010409;
+  --sidebar-accent: rgba(0, 240, 255, 0.08);
+  --sidebar-accent-foreground: #e6f9ff;
+  --sidebar-border: rgba(0, 240, 255, 0.2);
+  --sidebar-ring: #00f0ff;
+  /* market semantics in cyberpunk */
+  --up: #00ff66; /* Neon Matrix Green */
+  --down: #ff0055; /* Laser Pink */
+  --gold: #00f0ff; /* Neon cyan primary */
+  --gold-soft: #fcee0a; /* Cyber Yellow */
+  --violet-glow: #ff0055; /* Magenta glow */
+}
+
+[data-theme="obsidian"] {
+  --radius: 1rem;
   --background: #05070d;
   --foreground: #f2f5fa;
   --card: rgba(255, 255, 255, 0.04);
@@ -84,12 +126,51 @@
   --sidebar-accent-foreground: #f2f5fa;
   --sidebar-border: rgba(255, 255, 255, 0.09);
   --sidebar-ring: #f59e0b;
-  /* market semantics */
   --up: #10b981;
   --down: #f43f5e;
   --gold: #f59e0b;
   --gold-soft: #fbbf24;
   --violet-glow: #8b5cf6;
+}
+
+[data-theme="matrix"] {
+  --radius: 1rem;
+  --background: #020904;
+  --foreground: #d2fedb;
+  --card: rgba(0, 255, 102, 0.04);
+  --card-foreground: #d2fedb;
+  --popover: #041409;
+  --popover-foreground: #d2fedb;
+  --primary: #00ff66;
+  --primary-foreground: #011508;
+  --secondary: rgba(0, 255, 102, 0.08);
+  --secondary-foreground: #d2fedb;
+  --muted: rgba(0, 255, 102, 0.05);
+  --muted-foreground: #4e8c5d;
+  --accent: #10b981;
+  --accent-foreground: #ffffff;
+  --destructive: #ff3366;
+  --border: rgba(0, 255, 102, 0.22);
+  --input: rgba(0, 255, 102, 0.25);
+  --ring: #00ff66;
+  --chart-1: #00ff66;
+  --chart-2: #10b981;
+  --chart-3: #00f0ff;
+  --chart-4: #fcee0a;
+  --chart-5: #38bdf8;
+  --sidebar: #041409;
+  --sidebar-foreground: #d2fedb;
+  --sidebar-primary: #00ff66;
+  --sidebar-primary-foreground: #011508;
+  --sidebar-accent: rgba(0, 255, 102, 0.08);
+  --sidebar-accent-foreground: #d2fedb;
+  --sidebar-border: rgba(0, 255, 102, 0.22);
+  --sidebar-ring: #00ff66;
+  --up: #00ff66;
+  --down: #ff3366;
+  --gold: #00ff66;
+  --gold-soft: #7bf8a4;
+  --violet-glow: #00f0ff;
 }
 
 @theme inline {
@@ -325,8 +406,250 @@ body {
 
 /* reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee, .animate-floaty, .animate-shimmer, .conic-border::before, .aurora-gold, .aurora-violet, .aurora-emerald {
+  .animate-marquee, .animate-floaty, .animate-shimmer, .conic-border::before, .aurora-gold, .aurora-violet, .aurora-emerald, .perspective-grid-plane {
     animation: none !important;
   }
   html { scroll-behavior: auto; }
 }
+
+/* ==========================================================================
+   CYBERPUNK & RETRO-FUTURISTIC HUD DESIGN UTILITIES (AWWWARDS SOTD CALIBER)
+   ========================================================================== */
+
+/* ---------- Chamfered Cut Angles ---------- */
+.cyber-chamfer {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 14px) 0,
+    100% 14px,
+    100% 100%,
+    14px 100%,
+    0 calc(100% - 14px)
+  );
+}
+
+.cyber-chamfer-sm {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 8px) 0,
+    100% 8px,
+    100% 100%,
+    8px 100%,
+    0 calc(100% - 8px)
+  );
+}
+
+.cyber-chamfer-pill {
+  clip-path: polygon(
+    10px 0%,
+    calc(100% - 10px) 0%,
+    100% 50%,
+    calc(100% - 10px) 100%,
+    10px 100%,
+    0% 50%
+  );
+}
+
+/* ---------- Cyberpunk Glows ---------- */
+.glow-cyan {
+  box-shadow: 0 0 24px -4px rgba(0, 240, 255, 0.45);
+}
+
+.glow-magenta {
+  box-shadow: 0 0 24px -4px rgba(255, 0, 85, 0.45);
+}
+
+.glow-yellow {
+  box-shadow: 0 0 24px -4px rgba(252, 238, 10, 0.45);
+}
+
+.glow-matrix {
+  box-shadow: 0 0 24px -4px rgba(0, 255, 102, 0.45);
+}
+
+/* ---------- CRT Scanlines Raster Overlay ---------- */
+.cyber-scanlines {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.3) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 85, 0.02),
+    rgba(0, 255, 102, 0.01),
+    rgba(0, 240, 255, 0.02)
+  );
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+}
+
+/* ---------- 3D Perspective Cyber Grid Floor (Awwwards Reference) ---------- */
+.perspective-grid {
+  position: absolute;
+  inset: 0;
+  perspective: 480px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.perspective-grid-plane {
+  position: absolute;
+  top: 36%;
+  left: -50%;
+  width: 200%;
+  height: 120%;
+  transform-origin: 50% 0%;
+  transform: rotateX(75deg);
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.15) 1px, transparent 1px);
+  background-size: 44px 44px;
+  animation: cyber-grid-flow 16s linear infinite;
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.8) 12%, rgba(0, 0, 0, 0.25) 75%, transparent 100%);
+}
+
+[data-theme="matrix"] .perspective-grid-plane {
+  background-image: 
+    linear-gradient(rgba(0, 255, 102, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 102, 0.16) 1px, transparent 1px);
+}
+
+[data-theme="obsidian"] .perspective-grid-plane {
+  background-image: 
+    linear-gradient(rgba(245, 158, 11, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.12) 1px, transparent 1px);
+}
+
+@keyframes cyber-grid-flow {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 44px; }
+}
+
+/* ---------- Glitch Text Effect (Chromatic Aberration) ---------- */
+.glitch-text {
+  position: relative;
+  display: inline-block;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  clip: rect(0, 0, 0, 0);
+  pointer-events: none;
+}
+
+.glitch-text:hover::before,
+.glitch-active::before {
+  left: -2px;
+  text-shadow: 2px 0 #00f0ff;
+  animation: glitch-anim-1 2.2s infinite linear alternate-reverse;
+}
+
+.glitch-text:hover::after,
+.glitch-active::after {
+  left: 2px;
+  text-shadow: -2px 0 #ff0055;
+  animation: glitch-anim-2 2.6s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim-1 {
+  0% { clip: rect(14px, 9999px, 48px, 0); transform: skew(0.3deg); }
+  15% { clip: rect(70px, 9999px, 92px, 0); transform: skew(-0.4deg); }
+  30% { clip: rect(28px, 9999px, 54px, 0); transform: skew(0.2deg); }
+  50% { clip: rect(85px, 9999px, 102px, 0); transform: skew(-0.1deg); }
+  70% { clip: rect(12px, 9999px, 34px, 0); transform: skew(0.4deg); }
+  85% { clip: rect(60px, 9999px, 82px, 0); transform: skew(0deg); }
+  100% { clip: rect(40px, 9999px, 66px, 0); transform: skew(0.2deg); }
+}
+
+@keyframes glitch-anim-2 {
+  0% { clip: rect(48px, 9999px, 76px, 0); transform: skew(-0.3deg); }
+  20% { clip: rect(18px, 9999px, 38px, 0); transform: skew(0.4deg); }
+  40% { clip: rect(80px, 9999px, 104px, 0); transform: skew(-0.2deg); }
+  60% { clip: rect(34px, 9999px, 60px, 0); transform: skew(0.1deg); }
+  80% { clip: rect(90px, 9999px, 112px, 0); transform: skew(-0.4deg); }
+  100% { clip: rect(24px, 9999px, 46px, 0); transform: skew(0deg); }
+}
+
+/* ---------- Cyber Corner Brackets [ ] ---------- */
+.cyber-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.cyber-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 30px -6px rgba(0, 240, 255, 0.25);
+}
+
+[data-theme="cyberpunk"] .cyber-corner-tl::before,
+[data-theme="cyberpunk"] .cyber-corner-br::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+}
+
+[data-theme="cyberpunk"] .cyber-corner-tl::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid var(--primary);
+  border-left: 2px solid var(--primary);
+}
+
+[data-theme="cyberpunk"] .cyber-corner-br::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+}
+
+/* Cyber telemetry badge */
+.cyber-badge {
+  font-family: var(--font-data), monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  color: #00f0ff;
+}
+
+[data-theme="matrix"] .cyber-badge {
+  background: rgba(0, 255, 102, 0.08);
+  border-color: rgba(0, 255, 102, 0.3);
+  color: #00ff66;
+}
+
+[data-theme="obsidian"] .cyber-badge {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+}
+
+/* Cyber text gradient */
+.text-gradient-cyber {
+  background: linear-gradient(100deg, #00f0ff 0%, #00ff66 50%, #fcee0a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-neon {
+  background: linear-gradient(100deg, #00f0ff 0%, #ff0055 50%, #fcee0a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+

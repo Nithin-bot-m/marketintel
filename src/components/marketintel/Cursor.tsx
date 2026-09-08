@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { motion, useMotionValue } from "framer-motion";
+import { useMarketTheme } from "./ThemeContext";
 
 type Variant = "default" | "link";
 
@@ -20,11 +21,12 @@ function isTouchOnly() {
 }
 
 /**
- * Custom dot cursor — a single precise dot that tracks the pointer 1:1.
- * Grows + turns amber over interactive elements, dips on press.
- * No trailing ring. Auto-disabled on touch devices.
+ * Custom precision cursor — tracks pointer 1:1.
+ * Dynamically switches between Cyberpunk Neon Cyan/Magenta, Matrix Emerald, and Obsidian Gold.
+ * Auto-disabled on touch devices.
  */
 export default function Cursor() {
+  const { theme } = useMarketTheme();
   const enabled = useSyncExternalStore(
     subscribeCoarsePointer,
     () => !isTouchOnly(),
@@ -73,7 +75,27 @@ export default function Cursor() {
 
   if (!enabled) return null;
 
-  const scale = pressed ? 0.55 : variant === "link" ? 2.4 : 1;
+  const scale = pressed ? 0.55 : variant === "link" ? 2.2 : 1;
+
+  const dotColor =
+    variant === "link"
+      ? theme === "cyberpunk"
+        ? "#ff0055"
+        : theme === "matrix"
+        ? "#00ff66"
+        : "#f59e0b"
+      : theme === "cyberpunk"
+      ? "#00f0ff"
+      : theme === "matrix"
+      ? "#00ff66"
+      : "#ffffff";
+
+  const shadowColor =
+    theme === "cyberpunk"
+      ? "rgba(0,240,255,0.9)"
+      : theme === "matrix"
+      ? "rgba(0,255,102,0.9)"
+      : "rgba(245,158,11,0.85)";
 
   return (
     <motion.div
@@ -85,10 +107,13 @@ export default function Cursor() {
         animate={{
           scale,
           opacity: visible ? 1 : 0,
-          backgroundColor: variant === "link" ? "#f59e0b" : "#ffffff",
+          backgroundColor: dotColor,
+          boxShadow: `0 0 14px ${shadowColor}`,
         }}
         transition={{ type: "spring", stiffness: 520, damping: 30, mass: 0.4 }}
-        className="h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-[0_0_12px_rgba(245,158,11,0.85)]"
+        className={`h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 ${
+          theme === "cyberpunk" ? "rounded-sm rotate-45" : "rounded-full"
+        }`}
       />
     </motion.div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { CandleBar, MarketStatus } from "@/lib/types";
+import { useMarketTheme, type MarketTheme } from "./ThemeContext";
 
 export interface CandleTick {
   price: number;
@@ -18,10 +19,81 @@ interface Props {
   className?: string;
 }
 
-const UP_C = "#10b981";
-const DOWN_C = "#f43f5e";
 const POLL_MS = 20_000;
 const BAR_MS = 60_000; // 1-minute bars
+
+function getChartColors(theme: MarketTheme) {
+  if (theme === "cyberpunk") {
+    return {
+      up: "#00ff66",
+      down: "#ff0055",
+      upStroke: "rgba(0,255,102,0.8)",
+      downStroke: "rgba(255,0,85,0.8)",
+      upFill1: "rgba(0,255,102,0.95)",
+      upFill2: "rgba(5,200,85,0.85)",
+      downFill1: "rgba(255,0,85,0.95)",
+      downFill2: "rgba(200,0,65,0.85)",
+      volUp: "rgba(0,255,102,",
+      volDown: "rgba(255,0,85,",
+      emaGrad: ["rgba(0,240,255,0)", "rgba(0,240,255,0.45)", "rgba(0,240,255,0.95)"],
+      emaShadow: "rgba(0,240,255,0.75)",
+      tagBorder: "rgba(0,240,255,0.6)",
+      tagText: "#00f0ff",
+      crosshairBorder: "rgba(252,238,10,0.85)",
+      crosshairText: "#fcee0a",
+      pulseStrokeUp: "rgba(0,255,102,",
+      pulseStrokeDown: "rgba(255,0,85,",
+      priceTagTextUp: "#6ee7b7",
+      priceTagTextDown: "#fda4af",
+    };
+  }
+  if (theme === "matrix") {
+    return {
+      up: "#00ff66",
+      down: "#ff3366",
+      upStroke: "rgba(0,255,102,0.8)",
+      downStroke: "rgba(255,51,102,0.8)",
+      upFill1: "rgba(0,255,102,0.95)",
+      upFill2: "rgba(16,185,129,0.85)",
+      downFill1: "rgba(255,51,102,0.95)",
+      downFill2: "rgba(200,20,60,0.85)",
+      volUp: "rgba(0,255,102,",
+      volDown: "rgba(255,51,102,",
+      emaGrad: ["rgba(56,189,248,0)", "rgba(56,189,248,0.4)", "rgba(56,189,248,0.95)"],
+      emaShadow: "rgba(56,189,248,0.7)",
+      tagBorder: "rgba(0,255,102,0.6)",
+      tagText: "#00ff66",
+      crosshairBorder: "rgba(0,255,102,0.85)",
+      crosshairText: "#00ff66",
+      pulseStrokeUp: "rgba(0,255,102,",
+      pulseStrokeDown: "rgba(255,51,102,",
+      priceTagTextUp: "#6ee7b7",
+      priceTagTextDown: "#fda4af",
+    };
+  }
+  return {
+    up: "#10b981",
+    down: "#f43f5e",
+    upStroke: "rgba(16,185,129,0.7)",
+    downStroke: "rgba(244,63,94,0.7)",
+    upFill1: "rgba(52,211,153,0.95)",
+    upFill2: "rgba(5,150,105,0.85)",
+    downFill1: "rgba(251,113,133,0.95)",
+    downFill2: "rgba(225,29,72,0.85)",
+    volUp: "rgba(16,185,129,",
+    volDown: "rgba(244,63,94,",
+    emaGrad: ["rgba(245,181,74,0)", "rgba(245,181,74,0.38)", "rgba(245,181,74,0.95)"],
+    emaShadow: "rgba(245,181,74,0.55)",
+    tagBorder: "rgba(245,181,74,0.6)",
+    tagText: "#fcd34d",
+    crosshairBorder: "rgba(245,181,74,0.6)",
+    crosshairText: "#fcd34d",
+    pulseStrokeUp: "rgba(16,185,129,",
+    pulseStrokeDown: "rgba(244,63,94,",
+    priceTagTextUp: "#6ee7b7",
+    priceTagTextDown: "#fda4af",
+  };
+}
 
 function fontStack(): string {
   if (typeof window === "undefined") return "monospace";
@@ -78,9 +150,15 @@ interface LiveCandle extends CandleBar {
  * - No synthetic prices — every bar is an actual OHLC record.
  */
 export default function CandleChart({ symbol = "^NSEI", status, onTick, className }: Props) {
+  const { theme } = useMarketTheme();
+  const themeRef = useRef(theme);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const onTickRef = useRef(onTick);
   const statusRef = useRef<MarketStatus | null>(null);
+
+  useEffect(() => {
+    themeRef.current = theme;
+  }, [theme]);
 
   useEffect(() => {
     onTickRef.current = onTick;
@@ -315,6 +393,8 @@ export default function CandleChart({ symbol = "^NSEI", status, onTick, classNam
       const last = candles.length - 1;
       const emaK = 2 / 10;
 
+      const pal = getChartColors(themeRef.current);
+
       /* ---- volume bars (real turnover; hidden when the index has none) ---- */
       if (maxVol > 0) {
         const volBase = h * 0.985;
@@ -324,8 +404,8 @@ export default function CandleChart({ symbol = "^NSEI", status, onTick, classNam
           const x = xOf(c);
           if (x < -spacing || x > w - rightPad) continue;
           const upC = c.c >= c.o;
-          const alpha = i === last ? 0.34 : 0.16;
-          ctx.fillStyle = upC ? `rgba(16,185,129,${alpha})` : `rgba(244,63,94,${alpha})`;
+          const alpha = i === last ? 0.38 : 0.18;
+          ctx.fillStyle = upC ? `${pal.volUp}${alpha})` : `${pal.volDown}${alpha})`;
           const vh = (c.v / maxVol) * volMax;
           ctx.fillRect(x - bodyW / 2, volBase - vh, bodyW, vh);
         }
@@ -337,7 +417,7 @@ export default function CandleChart({ symbol = "^NSEI", status, onTick, classNam
         const x = xOf(c);
         if (x < -spacing || x > w - rightPad) continue;
         const upC = c.c >= c.o;
-        const col = upC ? UP_C : DOWN_C;
+        const col = upC ? pal.up : pal.down;
         const fadeIn = Math.min(1, (t - c.born) / 240);
         const yO = yOf(c.o);
         const yC = yOf(c.c);
@@ -346,7 +426,7 @@ export default function CandleChart({ symbol = "^NSEI", status, onTick, classNam
 
         ctx.globalAlpha = fadeIn;
 
-        ctx.strokeStyle = upC ? "rgba(16,185,129,0.7)" : "rgba(244,63,94,0.7)";
+        ctx.strokeStyle = upC ? pal.upStroke : pal.downStroke;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(Math.round(x) + 0.5, yH);
@@ -357,17 +437,17 @@ export default function CandleChart({ symbol = "^NSEI", status, onTick, classNam
         const bH = Math.max(2, Math.abs(yO - yC));
         if (i >= last - 2) {
           ctx.shadowColor = col;
-          ctx.shadowBlur = 13;
+          ctx.shadowBlur = 14;
         }
         if (upC) {
           const g = ctx.createLinearGradient(0, bTop, 0, bTop + bH);
-          g.addColorStop(0, "rgba(52,211,153,0.95)");
-          g.addColorStop(1, "rgba(5,150,105,0.85)");
+          g.addColorStop(0, pal.upFill1);
+          g.addColorStop(1, pal.upFill2);
           ctx.fillStyle = g;
         } else {
           const g = ctx.createLinearGradient(0, bTop, 0, bTop + bH);
-          g.addColorStop(0, "rgba(251,113,133,0.95)");
-          g.addColorStop(1, "rgba(225,29,72,0.85)");
+          g.addColorStop(0, pal.downFill1);
+          g.addColorStop(1, pal.downFill2);
           ctx.fillStyle = g;
         }
         roundRect(ctx, x - bodyW / 2, bTop, bodyW, bH, 1.5);
@@ -376,7 +456,7 @@ export default function CandleChart({ symbol = "^NSEI", status, onTick, classNam
         ctx.globalAlpha = 1;
       }
 
-      /* ---- EMA-9 (gold glow) ---- */
+      /* ---- EMA-9 (neon glow) ---- */
       const pts: { x: number; y: number }[] = [];
       let ema = candles[0]?.c ?? 0;
       for (let i = 0; i < candles.length; i++) {
@@ -387,13 +467,13 @@ export default function CandleChart({ symbol = "^NSEI", status, onTick, classNam
       }
       if (pts.length > 2) {
         const g = ctx.createLinearGradient(pts[0].x, 0, pts[pts.length - 1].x, 0);
-        g.addColorStop(0, "rgba(245,181,74,0)");
-        g.addColorStop(0.55, "rgba(245,181,74,0.38)");
-        g.addColorStop(1, "rgba(245,181,74,0.95)");
+        g.addColorStop(0, pal.emaGrad[0]);
+        g.addColorStop(0.55, pal.emaGrad[1]);
+        g.addColorStop(1, pal.emaGrad[2]);
         ctx.strokeStyle = g;
         ctx.lineWidth = 1.6;
-        ctx.shadowColor = "rgba(245,181,74,0.55)";
-        ctx.shadowBlur = 9;
+        ctx.shadowColor = pal.emaShadow;
+        ctx.shadowBlur = 12;
         ctx.beginPath();
         ctx.moveTo(pts[0].x, pts[0].y);
         for (let i = 1; i < pts.length - 1; i++) {
@@ -409,10 +489,10 @@ export default function CandleChart({ symbol = "^NSEI", status, onTick, classNam
       /* ---- last price line + tag + pulsing dot ---- */
       const cur = candles[last];
       const curUp = cur.c >= cur.o;
-      const curCol = curUp ? UP_C : DOWN_C;
+      const curCol = curUp ? pal.up : pal.down;
       const yPrice = yOf(cur.c);
       ctx.setLineDash([5, 5]);
-      ctx.strokeStyle = curUp ? "rgba(16,185,129,0.42)" : "rgba(244,63,94,0.42)";
+      ctx.strokeStyle = curUp ? `${pal.pulseStrokeUp}0.45)` : `${pal.pulseStrokeDown}0.45)`;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, Math.round(yPrice) + 0.5);
@@ -426,8 +506,8 @@ export default function CandleChart({ symbol = "^NSEI", status, onTick, classNam
       ctx.arc(xOf(cur), yPrice, 3, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = curUp
-        ? `rgba(16,185,129,${0.55 * (1 - pulse)})`
-        : `rgba(244,63,94,${0.55 * (1 - pulse)})`;
+        ? `${pal.pulseStrokeUp}${0.6 * (1 - pulse)})`
+        : `${pal.pulseStrokeDown}${0.6 * (1 - pulse)})`;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(xOf(cur), yPrice, 4 + pulse * 9, 0, Math.PI * 2);
@@ -439,11 +519,11 @@ export default function CandleChart({ symbol = "^NSEI", status, onTick, classNam
       ctx.fillStyle = "rgba(9,13,22,0.94)";
       roundRect(ctx, w - rightPad + 10, tagY, tagW, tagH, 5);
       ctx.fill();
-      ctx.strokeStyle = curUp ? "rgba(16,185,129,0.55)" : "rgba(244,63,94,0.55)";
+      ctx.strokeStyle = curUp ? `${pal.pulseStrokeUp}0.65)` : `${pal.pulseStrokeDown}0.65)`;
       ctx.lineWidth = 1;
       roundRect(ctx, w - rightPad + 10, tagY, tagW, tagH, 5);
       ctx.stroke();
-      ctx.fillStyle = curUp ? "#6ee7b7" : "#fda4af";
+      ctx.fillStyle = curUp ? pal.priceTagTextUp : pal.priceTagTextDown;
       ctx.font = `700 10.5px ${mono}`;
       ctx.textAlign = "center";
       ctx.fillText(fmtPrice(cur.c), w - rightPad + 10 + tagW / 2, tagY + tagH / 2 + 0.5);
@@ -473,10 +553,10 @@ export default function CandleChart({ symbol = "^NSEI", status, onTick, classNam
           ctx.fillStyle = "rgba(9,13,22,0.94)";
           roundRect(ctx, w - rightPad + 10, my - 10, rightPad - 16, 20, 5);
           ctx.fill();
-          ctx.strokeStyle = "rgba(245,181,74,0.6)";
+          ctx.strokeStyle = pal.crosshairBorder;
           roundRect(ctx, w - rightPad + 10, my - 10, rightPad - 16, 20, 5);
           ctx.stroke();
-          ctx.fillStyle = "#fcd34d";
+          ctx.fillStyle = pal.crosshairText;
           ctx.font = `700 10.5px ${mono}`;
           ctx.textAlign = "center";
           ctx.fillText(fmtPrice(pv), w - rightPad + 10 + (rightPad - 16) / 2, my + 0.5);

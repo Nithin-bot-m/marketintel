@@ -55,8 +55,8 @@ export default function Footer() {
           {/* brand */}
           <div className="lg:col-span-2">
             <a href="#top" className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600">
-                <TrendingUp className="h-5 w-5 text-black" strokeWidth={2.6} />
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden border border-white/15 shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+                <img src="/icon.png" alt="MarketIntel" className="h-full w-full object-cover rounded-xl" />
               </span>
               <span className="flex flex-col leading-none">
                 <span className="font-heading text-lg font-bold tracking-tight text-white">
@@ -128,14 +128,6 @@ export default function Footer() {
             © {new Date().getFullYear()} ISD Info Solutions. MarketIntel —{" "}
             <span className="text-foreground/70">A property of ISD Info Solutions.</span>
           </p>
-          <div className="flex items-center gap-5 text-xs text-muted-foreground">
-            <a href="#top" className="transition-colors hover:text-amber-300">Sitemap</a>
-            <a href="#top" className="transition-colors hover:text-amber-300">RSS</a>
-            <a href="#top" className="transition-colors hover:text-amber-300">Robots</a>
-            <span className="font-data rounded-full border border-white/10 px-3 py-1 text-[10px]">
-              v1.0 · first of four
-            </span>
-          </div>
         </div>
       </div>
     </footer>

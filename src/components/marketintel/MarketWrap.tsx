@@ -24,6 +24,7 @@ import {
 } from "@/lib/market-data";
 import type { MarketSnapshot } from "@/lib/types";
 import { Reveal, SectionHeading } from "./Primitives";
+import { useMarketTheme } from "./ThemeContext";
 
 function TiltCard({
   children,
@@ -34,6 +35,7 @@ function TiltCard({
   className?: string;
   delay?: number;
 }) {
+  const { theme } = useMarketTheme();
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
   return (
     <motion.div
@@ -54,7 +56,13 @@ function TiltCard({
       <motion.div
         animate={{ rotateX: tilt.rx, rotateY: tilt.ry }}
         transition={{ type: "spring", stiffness: 170, damping: 18 }}
-        className="glass glass-hover relative h-full overflow-hidden rounded-3xl"
+        className={`glass-hover relative h-full overflow-hidden transition-all duration-300 ${
+          theme === "cyberpunk"
+            ? "cyber-chamfer cyber-card cyber-corner-tl cyber-corner-br border-cyan-400/25 bg-[#060c14]/85"
+            : theme === "matrix"
+            ? "rounded-3xl border-emerald-500/25 bg-[#031106]/85"
+            : "glass rounded-3xl"
+        }`}
       >
         {children}
       </motion.div>

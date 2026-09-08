@@ -50,6 +50,15 @@ export const metadata: Metadata = {
     title: "MarketIntel — Indian Market Intelligence",
     description: "Decoding Indian markets daily. A property of ISD Info Solutions.",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {

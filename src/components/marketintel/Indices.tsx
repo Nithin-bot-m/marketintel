@@ -7,6 +7,7 @@ import { formatINR } from "@/lib/market-data";
 import type { CandleBar, LiveQuote, MarketSnapshot } from "@/lib/types";
 import { Reveal, SectionHeading } from "./Primitives";
 import MiniCandles from "./MiniCandles";
+import { useMarketTheme } from "./ThemeContext";
 
 const YAHOO_SYM: Record<string, string> = {
   "NIFTY 50": "^NSEI",
@@ -73,6 +74,7 @@ function IndexCard({
   candles: CandleBar[] | null;
   i: number;
 }) {
+  const { theme } = useMarketTheme();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
   const up = idx.changePct >= 0;
@@ -100,7 +102,13 @@ function IndexCard({
       <motion.div
         animate={{ rotateX: tilt.rx, rotateY: tilt.ry }}
         transition={{ type: "spring", stiffness: 180, damping: 18 }}
-        className="glass glass-hover group relative h-full overflow-hidden rounded-2xl p-5"
+        className={`glass-hover group relative h-full overflow-hidden p-5 transition-all duration-300 ${
+          theme === "cyberpunk"
+            ? "cyber-chamfer cyber-card cyber-corner-tl cyber-corner-br border-cyan-400/30 hover:border-cyan-400 hover:glow-cyan bg-[#070e17]/80"
+            : theme === "matrix"
+            ? "rounded-2xl border-emerald-500/30 hover:border-emerald-400 hover:glow-matrix bg-[#041208]/80"
+            : "glass rounded-2xl"
+        }`}
       >
         {/* top accent line */}
         <div

@@ -237,7 +237,7 @@ export default function Hero() {
 
           <motion.h1
             variants={item}
-            className="font-heading text-[12.5vw] font-bold leading-[0.98] tracking-tight sm:text-7xl lg:text-[5.4rem]"
+            className="font-heading text-4xl sm:text-6xl md:text-7xl lg:text-[5.4rem] font-bold leading-[1.05] lg:leading-[0.98] tracking-tight break-words"
           >
             <span className="block">
               {HEADLINE_A.map((wd, i) => (
@@ -311,17 +311,17 @@ export default function Hero() {
           {/* stat strip */}
           <motion.dl
             variants={item}
-            className="mt-12 grid max-w-lg grid-cols-3 divide-x divide-white/[0.08]"
+            className="mt-12 grid max-w-lg grid-cols-3 divide-x divide-white/[0.08] w-full"
           >
             {[
               { k: "T1 sources tracked", v: "5" },
               { k: "Categories covered", v: "6" },
               { k: "Buy/sell tips", v: "0" },
             ].map((s) => (
-              <div key={s.k} className="px-4 first:pl-0">
-                <dt className="order-2 mt-1 text-[11px] leading-snug text-muted-foreground">{s.k}</dt>
+              <div key={s.k} className="px-2.5 sm:px-4 first:pl-0">
+                <dt className="order-2 mt-1 text-[10px] sm:text-[11px] leading-snug text-muted-foreground">{s.k}</dt>
                 <dd
-                  className={`font-heading order-1 text-3xl font-bold ${
+                  className={`font-heading order-1 text-2xl sm:text-3xl font-bold ${
                     theme === "cyberpunk"
                       ? "text-gradient-neon"
                       : theme === "matrix"

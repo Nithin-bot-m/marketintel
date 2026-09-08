@@ -55,7 +55,7 @@ export default function Topics() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.8, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
-              className="group glass glass-hover relative flex flex-col overflow-hidden rounded-3xl p-7"
+              className="group glass glass-hover relative flex flex-col overflow-hidden rounded-3xl p-5 sm:p-7"
             >
               <div className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-teal-400/10 blur-[50px] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
               <div className="flex items-center justify-between">
@@ -80,7 +80,7 @@ export default function Topics() {
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
               </div>
-              <div className="font-data mt-4 border-t border-white/[0.07] pt-4 text-[11px] text-muted-foreground/70">
+              <div className="font-data mt-4 border-t border-white/[0.07] pt-4 text-[11px] text-muted-foreground/70 truncate break-all">
                 marketintel.isdinfosolutions.com{t.path}
               </div>
             </motion.div>

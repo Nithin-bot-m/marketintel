@@ -66,7 +66,7 @@ function IpoRow({ ipo, i }: { ipo: IPOItem; i: number }) {
       </div>
 
       {ipo.status === "LISTED" ? (
-        <div className="lg:col-span-4">
+        <div className="col-span-2 lg:col-span-4">
           <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Listing vs issue</div>
           <div
             className={`font-data mt-1 inline-flex items-center gap-1.5 text-sm font-bold ${
@@ -79,7 +79,7 @@ function IpoRow({ ipo, i }: { ipo: IPOItem; i: number }) {
           </div>
         </div>
       ) : (
-        <div className="lg:col-span-2">
+        <div className="col-span-2 sm:col-span-1 lg:col-span-2">
           <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
             {ipo.status === "LIVE" ? "Subscribed" : "GMP"}
           </div>

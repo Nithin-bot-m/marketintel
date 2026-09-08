@@ -16,11 +16,11 @@ import Cursor from "@/components/marketintel/Cursor";
 export default function Home() {
   return (
     <ThemeProvider>
-      <div className="relative flex min-h-screen flex-col text-foreground transition-colors duration-500">
+      <div className="relative flex min-h-screen flex-col text-foreground transition-colors duration-500 overflow-x-hidden max-w-full w-full">
         <BackdropFX />
         <Cursor />
         <Navbar />
-        <main className="flex-1">
+        <main className="flex-1 overflow-x-hidden max-w-full w-full">
           <Hero />
           <Indices />
           <MarketWrap />

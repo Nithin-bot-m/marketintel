@@ -105,7 +105,7 @@ export default function Flows() {
             <motion.div
               whileHover={{ scale: 1.008 }}
               transition={{ type: "spring", stiffness: 200, damping: 22 }}
-              className="glass relative overflow-hidden rounded-3xl p-6 sm:p-8"
+              className="glass relative overflow-hidden rounded-3xl p-4 sm:p-8"
             >
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -121,7 +121,7 @@ export default function Flows() {
                 </span>
               </div>
 
-              <div className="h-[340px] w-full">
+              <div className="h-[340px] w-full min-w-0 overflow-hidden">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={FLOWS_MONTHLY} margin={{ top: 6, right: 6, left: -6, bottom: 0 }}>
                     <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />

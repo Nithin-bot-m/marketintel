@@ -181,12 +181,17 @@
 html {
   color-scheme: dark;
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
 }
 
 /* ---------- typography helpers ---------- */

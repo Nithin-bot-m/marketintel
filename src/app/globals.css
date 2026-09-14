@@ -173,6 +173,47 @@
   --violet-glow: #00f0ff;
 }
 
+[data-theme="light"],
+html.light {
+  --radius: 1rem;
+  --background: #f8fafc;
+  --foreground: #090e17;
+  --card: #ffffff;
+  --card-foreground: #090e17;
+  --popover: #ffffff;
+  --popover-foreground: #090e17;
+  --primary: #d97706;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #d97706;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --border: rgba(15, 23, 42, 0.12);
+  --input: rgba(15, 23, 42, 0.16);
+  --ring: #d97706;
+  --chart-1: #d97706;
+  --chart-2: #16a34a;
+  --chart-3: #2563eb;
+  --chart-4: #dc2626;
+  --chart-5: #7c3aed;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #090e17;
+  --sidebar-primary: #d97706;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: rgba(15, 23, 42, 0.1);
+  --sidebar-ring: #d97706;
+  --up: #16a34a;
+  --down: #dc2626;
+  --gold: #d97706;
+  --gold-soft: #b45309;
+  --violet-glow: #818cf8;
+}
+
 @theme inline {
   --color-up: var(--up);
   --color-down: var(--down);
@@ -186,12 +227,114 @@ html {
   width: 100%;
 }
 
+html.light,
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   overflow-x: hidden;
   max-width: 100vw;
   width: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ---------- light mode adaptations ---------- */
+html.light .glass,
+html[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+}
+
+html.light .glass-strong,
+html[data-theme="light"] .glass-strong {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.08);
+}
+
+html.light .glass-hover:hover,
+html[data-theme="light"] .glass-hover:hover {
+  border-color: rgba(217, 119, 6, 0.4);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 36px -8px rgba(217, 119, 6, 0.12), 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+html.light .cyber-card,
+html[data-theme="light"] .cyber-card {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.05);
+}
+
+html.light .cyber-card:hover,
+html[data-theme="light"] .cyber-card:hover {
+  border-color: #d97706;
+  box-shadow: 0 10px 32px -4px rgba(217, 119, 6, 0.15);
+}
+
+html.light .text-gradient-frost,
+html[data-theme="light"] .text-gradient-frost {
+  background: linear-gradient(180deg, #090e17 25%, #334155 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+html.light .text-gradient-gold,
+html[data-theme="light"] .text-gradient-gold {
+  background: linear-gradient(100deg, #b45309 0%, #d97706 50%, #78350f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+html.light .bg-grid,
+html[data-theme="light"] .bg-grid {
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+}
+
+html.light .dot-grid,
+html[data-theme="light"] .dot-grid {
+  background-image: radial-gradient(rgba(15, 23, 42, 0.1) 1px, transparent 1px);
+}
+
+html.light .cyber-scanlines,
+html[data-theme="light"] .cyber-scanlines {
+  display: none !important;
+}
+
+html.light .perspective-grid-plane,
+html[data-theme="light"] .perspective-grid-plane {
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(217, 119, 6, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(217, 119, 6, 0.16) 1px, transparent 1px);
+}
+
+html.light ::-webkit-scrollbar-track,
+html[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+html.light ::-webkit-scrollbar-thumb,
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border: 2px solid #f1f5f9;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover,
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* ---------- typography helpers ---------- */

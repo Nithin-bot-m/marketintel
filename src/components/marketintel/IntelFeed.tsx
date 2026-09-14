@@ -49,7 +49,7 @@ function ArticleCard({ a, i }: { a: IntelArticle; i: number }) {
         </div>
 
         <h3
-          className={`font-heading mt-5 font-bold leading-snug text-white transition-colors duration-300 group-hover:text-amber-200 ${
+          className={`font-heading mt-5 font-bold leading-snug text-foreground transition-colors duration-300 group-hover:text-amber-500 ${
             featured ? "text-2xl sm:text-[1.9rem] sm:leading-[1.25]" : "text-lg"
           }`}
         >
@@ -102,14 +102,14 @@ export default function IntelFeed() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading
-            index="03"
+            index="05"
             kicker="Intelligence Feed"
             title={
               <>
                 Latest <span className="text-gradient-gold">signal</span>, zero noise
               </>
             }
-            sub="Every item is a dated, verifiable release — T1 official (NSE, BSE, SEBI, RBI, PIB) or T2 desk analysis flagged for context. Original summaries, clear attribution, direct links to the source."
+            sub="Every item is a dated, verifiable release — T1 official (Federal Reserve, ECB, Bank of England, Bank of Japan, BIS, ForexFactory) or T2 institutional desk research. Original summaries, clear attribution, direct links to source."
           />
           <Reveal delay={0.15}>
             <div className="glass flex items-center gap-3 rounded-2xl px-5 py-3.5">

@@ -83,11 +83,13 @@ export default function Cursor() {
         ? "#ff0055"
         : theme === "matrix"
         ? "#00ff66"
-        : "#f59e0b"
+        : "#d97706"
       : theme === "cyberpunk"
       ? "#00f0ff"
       : theme === "matrix"
       ? "#00ff66"
+      : theme === "light"
+      ? "#0f172a"
       : "#ffffff";
 
   const shadowColor =
@@ -95,6 +97,8 @@ export default function Cursor() {
       ? "rgba(0,240,255,0.9)"
       : theme === "matrix"
       ? "rgba(0,255,102,0.9)"
+      : theme === "light"
+      ? "rgba(15,23,42,0.3)"
       : "rgba(245,158,11,0.85)";
 
   return (

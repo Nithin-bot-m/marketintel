@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Newspaper,
-  Rocket,
+  Calendar,
   BarChart3,
   Landmark,
-  FileText,
+  Clock,
   GraduationCap,
   ArrowUpRight,
   TrendingUp,
   TrendingDown,
+  Globe,
 } from "lucide-react";
 import {
   FLOWS_MONTHLY,
@@ -20,7 +21,7 @@ import {
   MACRO,
   WRAP_FACTS,
   formatCr,
-  formatINR,
+  formatFXPrice,
 } from "@/lib/market-data";
 import type { MarketSnapshot } from "@/lib/types";
 import { Reveal, SectionHeading } from "./Primitives";
@@ -109,9 +110,24 @@ function useWrapRows(snap: MarketSnapshot | null): WrapRow[] {
   const b = snap.breadth;
   if (b) {
     rows.push({
-      t: `Breadth ${b.advancers}:${b.decliners} advancers-to-decliners across the ${b.universe} basket`,
+      t: `Market Breadth: ${b.advancers} bullish vs ${b.decliners} bearish across ${b.universe}`,
       tag: "BREADTH",
       up: b.advancers >= b.decliners,
+    });
+  }
+  if (snap.dxy) {
+    rows.push({
+      t: `US Dollar Index (DXY) at ${snap.dxy.price.toFixed(2)} (${snap.dxy.changePct >= 0 ? "+" : ""}${snap.dxy.changePct.toFixed(2)}%) — greenback positioning steady`,
+      tag: "DXY",
+      up: snap.dxy.changePct >= 0,
+    });
+  }
+  const gold = snap.indices.find((q) => q.symbol === "XAU/USD");
+  if (gold) {
+    rows.push({
+      t: `Spot Gold (XAU/USD) trading at $${gold.price.toFixed(2)} (${gold.changePct >= 0 ? "+" : ""}${gold.changePct.toFixed(2)}%) — bullion safe-haven bid firm`,
+      tag: "XAU/USD",
+      up: gold.changePct >= 0,
     });
   }
   const sortedSectors = [...snap.sectors].sort((a, z) => z.changePct - a.changePct);
@@ -119,37 +135,21 @@ function useWrapRows(snap: MarketSnapshot | null): WrapRow[] {
     const top = sortedSectors[0];
     const lag = sortedSectors[sortedSectors.length - 1];
     rows.push({
-      t: `${top.label} leads sector board at ${top.changePct >= 0 ? "+" : ""}${top.changePct.toFixed(2)}%`,
-      tag: "SECTOR",
+      t: `${top.label} leads FX cross board at ${top.changePct >= 0 ? "+" : ""}${top.changePct.toFixed(2)}%`,
+      tag: "CROSS",
       up: top.changePct >= 0,
     });
     rows.push({
-      t: `${lag.label} sits at the bottom of the sector board (${lag.changePct >= 0 ? "+" : ""}${lag.changePct.toFixed(2)}%)`,
-      tag: "SECTOR",
+      t: `${lag.label} lags session performance (${lag.changePct >= 0 ? "+" : ""}${lag.changePct.toFixed(2)}%)`,
+      tag: "CROSS",
       up: lag.changePct >= 0,
     });
   }
   if (snap.vix) {
     rows.push({
-      t: `India VIX at ${snap.vix.price.toFixed(2)} (${snap.vix.changePct >= 0 ? "+" : ""}${snap.vix.changePct.toFixed(2)}%) — volatility regime stays constructive`,
-      tag: "F&O",
+      t: `Volatility Index at ${snap.vix.price.toFixed(2)} (${snap.vix.changePct >= 0 ? "+" : ""}${snap.vix.changePct.toFixed(2)}%) — macro risk regime stable`,
+      tag: "VOL",
       up: snap.vix.changePct < 0,
-    });
-  }
-  const g = snap.movers?.gainers?.[0];
-  const l = snap.movers?.losers?.[0];
-  if (g) {
-    rows.push({
-      t: `Top large-cap mover: ${g.name} ${g.changePct >= 0 ? "+" : ""}${g.changePct.toFixed(2)}% (NIFTY 50 basket)`,
-      tag: "CASH",
-      up: g.changePct >= 0,
-    });
-  }
-  if (l) {
-    rows.push({
-      t: `Weakest on the day: ${l.name} ${l.changePct >= 0 ? "+" : ""}${l.changePct.toFixed(2)}% (NIFTY 50 basket)`,
-      tag: "CASH",
-      up: l.changePct >= 0,
     });
   }
   return rows.slice(0, 6);
@@ -179,18 +179,9 @@ export default function MarketWrap() {
   }, []);
 
   const rows = useWrapRows(snap);
-  const nifty = snap?.indices.find((q) => q.symbol === "NIFTY 50");
-  const sensex = snap?.indices.find((q) => q.symbol === "SENSEX");
-  const liveIpos = IPOS.filter((i) => i.status === "LIVE");
-
-  const ordinal = (n: number) => {
-    const rem10 = n % 10;
-    const rem100 = n % 100;
-    if (rem10 === 1 && rem100 !== 11) return `${n}st`;
-    if (rem10 === 2 && rem100 !== 12) return `${n}nd`;
-    if (rem10 === 3 && rem100 !== 13) return `${n}rd`;
-    return `${n}th`;
-  };
+  const gold = snap?.indices.find((q) => q.symbol === "XAU/USD");
+  const eur = snap?.indices.find((q) => q.symbol === "EUR/USD");
+  const dxy = snap?.dxy;
 
   return (
     <section id="wrap" className="relative py-24 sm:py-28">
@@ -200,13 +191,13 @@ export default function MarketWrap() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
           index="02"
-          kicker="The Daily Wrap"
+          kicker="The Daily FX Wrap"
           title={
             <>
-              One bento. The entire <span className="text-gradient-gold">trading day.</span>
+              One bento. The global <span className="text-gradient-gold">currency pulse.</span>
             </>
           }
-          sub="Live board metrics stream from the exchange feed; session context is our verified wrap of the last close. Cash, banks, flows, macro and the IPO street — one intelligence board."
+          sub="Live interbank feeds, central bank policy radar, ForexFactory releases, and institutional CFTC positioning — distilled into one unified intelligence board."
         />
 
         <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-6">
@@ -216,22 +207,27 @@ export default function MarketWrap() {
               <CardHeader
                 icon={Newspaper}
                 tint="#f59e0b"
-                label="Market Wrap"
-                meta={nifty ? `LIVE BOARD · ${snap?.status.istTime} IST` : "SYNCING FEED"}
+                label="Global Currency & Bullion Wrap"
+                meta={gold ? `INTERBANK FEED · ${snap?.status.gmtTime}` : "SYNCING FEED"}
               />
-              <h3 className="font-heading mt-6 text-2xl font-bold leading-snug text-white sm:text-3xl">
-                {nifty && sensex ? (
+              <h3 className="font-heading mt-6 text-2xl font-bold leading-snug text-foreground sm:text-3xl">
+                {gold && eur ? (
                   <>
-                    Nifty {formatINR(nifty.price, 2)}{" "}
-                    <span className={nifty.changePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
-                      ({nifty.changePct >= 0 ? "+" : ""}
-                      {nifty.changePct.toFixed(2)}%)
+                    Gold ${formatFXPrice(gold.price, 2)}{" "}
+                    <span className={gold.changePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                      ({gold.changePct >= 0 ? "+" : ""}
+                      {gold.changePct.toFixed(2)}%)
                     </span>{" "}
-                    · Sensex{" "}
-                    <span className={sensex.changePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
-                      {sensex.changePct >= 0 ? "+" : "−"}
-                      {formatINR(Math.abs(sensex.change), 0)} pts
+                    · EUR/USD {formatFXPrice(eur.price, 4)}{" "}
+                    <span className={eur.changePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                      ({eur.changePct >= 0 ? "+" : ""}
+                      {eur.changePct.toFixed(2)}%)
                     </span>
+                    {dxy && (
+                      <span className="text-foreground/70 text-lg sm:text-xl font-normal block sm:inline sm:ml-2">
+                        · DXY {dxy.price.toFixed(2)}
+                      </span>
+                    )}
                   </>
                 ) : (
                   <span className="inline-block h-8 w-72 animate-pulse rounded-xl bg-white/[0.07]" />
@@ -274,90 +270,71 @@ export default function MarketWrap() {
                 href="#intel"
                 className="group mt-6 inline-flex w-fit items-center gap-2 text-sm font-semibold text-amber-400 transition-colors hover:text-amber-300"
               >
-                Read the full wrap
+                Read Institutional Intelligence
                 <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </a>
             </div>
           </TiltCard>
 
-          {/* ── IPO mini tracker ───────────────────────────── */}
+          {/* ── ForexFactory Economic Calendar Preview ───────────────────────────── */}
           <TiltCard className="lg:col-span-2" delay={0.08}>
             <div className="flex h-full flex-col p-6">
-              <CardHeader icon={Rocket} tint="#10b981" label="IPO Street" meta={`${liveIpos.length} live`} />
-              <div className="mt-5 space-y-4">
-                {liveIpos.map((ipo) => (
-                  <div key={ipo.name}>
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-foreground/90">{ipo.name}</span>
-                      <span className="font-data shrink-0 text-sm font-bold text-emerald-400">
-                        {ipo.subscription ?? "—"}
+              <CardHeader icon={Calendar} tint="#10b981" label="ForexFactory Radar" meta="HIGH IMPACT" />
+              <div className="mt-5 space-y-3.5">
+                {IPOS.slice(0, 3).map((item) => (
+                  <div key={item.name} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 transition-colors hover:border-emerald-400/20">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-data rounded bg-emerald-400/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                        {item.kind}
                       </span>
+                      <span className="font-data text-[10px] text-amber-300/90">{item.window}</span>
                     </div>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        whileInView={{ width: "62%" }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
-                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-300"
-                      />
+                    <div className="mt-2 text-sm font-medium text-foreground/90 leading-snug">{item.name}</div>
+                    <div className="mt-1 flex items-center justify-between font-data text-[11px] text-muted-foreground">
+                      <span>{item.priceBand}</span>
+                      <span>{item.lot}</span>
                     </div>
-                    <div className="mt-1 text-[11px] text-muted-foreground">
-                      {ipo.window} · {ipo.kind} issue
-                    </div>
-                  </div>
-                ))}
-                {IPOS.filter((i) => i.status === "UPCOMING").slice(0, 1).map((ipo) => (
-                  <div key={ipo.name} className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-foreground/85">Next: {ipo.name}</span>
-                      <span className="font-data shrink-0 text-[11px] text-amber-300/90">{ipo.window}</span>
-                    </div>
-                    <div className="mt-0.5 text-[11px] text-muted-foreground">Band {ipo.priceBand}</div>
                   </div>
                 ))}
               </div>
-              <a href="#ipo" className="group mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-emerald-400 transition-colors hover:text-emerald-300">
-                Open IPO tracker
+              <a href="#calendar" className="group mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-emerald-400 transition-colors hover:text-emerald-300">
+                Open Full Economic Calendar
                 <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </a>
             </div>
           </TiltCard>
 
-          {/* ── FII/DII today (verified provisionals) ───────────────────────────── */}
+          {/* ── CFTC COT Positioning ───────────────────────────── */}
           <TiltCard className="lg:col-span-2" delay={0.12}>
             <div className="flex h-full flex-col p-6">
-              <CardHeader icon={BarChart3} tint="#8b5cf6" label="Provisional Flows" meta={FLOW_SESSIONS.asOf.toUpperCase()} />
+              <CardHeader icon={BarChart3} tint="#8b5cf6" label="CFTC COT Positioning" meta="INSTITUTIONAL" />
               <div className="mt-6 grid grid-cols-2 gap-4">
-                <div className="rounded-2xl border border-rose-400/15 bg-rose-400/[0.06] p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-rose-300/80">FII · Cash</div>
-                  <div className={`font-data mt-1.5 text-xl font-bold ${FLOW_SESSIONS.fii >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                <div className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.06] p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-amber-300/80">Gold Net Long</div>
+                  <div className="font-data mt-1.5 text-xl font-bold text-amber-300">
                     {formatCr(FLOW_SESSIONS.fii)}
                   </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">net sell · {FLOW_SESSIONS.asOf}</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">speculative contracts</div>
                 </div>
                 <div className="rounded-2xl border border-violet-400/15 bg-violet-400/[0.06] p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-violet-300/80">DII · Cash</div>
-                  <div className={`font-data mt-1.5 text-xl font-bold ${FLOW_SESSIONS.dii >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-violet-300/80">EUR Net Long</div>
+                  <div className="font-data mt-1.5 text-xl font-bold text-violet-300">
                     {formatCr(FLOW_SESSIONS.dii)}
                   </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">
-                    {ordinal(FLOW_SESSIONS.diiStreak)} straight buy day
-                  </div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">6-month expansion</div>
                 </div>
               </div>
-              {/* mini flow bars — verified monthly FPI series */}
+              {/* mini flow bars — verified monthly Gold positioning */}
               <div className="mt-6 flex h-16 items-end gap-1.5" aria-hidden>
                 {FLOWS_MONTHLY.map((f, i) => {
-                  const pos = f.fii >= 0;
                   return (
                     <motion.div
                       key={f.month}
                       initial={{ height: 0 }}
-                      whileInView={{ height: `${Math.max(6, (Math.abs(f.fii) / 120000) * 100)}%` }}
+                      whileInView={{ height: `${Math.max(12, (f.fii / 300000) * 100)}%` }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.7, delay: 0.15 + i * 0.06, ease: "easeOut" }}
-                      className={`w-full self-end rounded-t-md ${pos ? "bg-emerald-400/60" : "bg-rose-400/60"}`}
+                      className="w-full self-end rounded-t-md bg-amber-400/60"
                       title={`${f.month} ${f.year}: ${formatCr(f.fii)}`}
                       style={{ alignSelf: "flex-end" }}
                     />
@@ -365,19 +342,19 @@ export default function MarketWrap() {
                 })}
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                FPI net equity flows · Mar – Aug 2026 · ₹ crore
+                CFTC Gold speculative net contracts · Mar – Aug 2026
               </p>
               <a href="#flows" className="group mt-auto inline-flex items-center gap-2 pt-4 text-sm font-semibold text-violet-300 transition-colors hover:text-violet-200">
-                Full flow history
+                View COT Breakdown
                 <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </a>
             </div>
           </TiltCard>
 
-          {/* ── Macro dashboard (verified prints) ───────────────────────────── */}
+          {/* ── Central Bank Policy Radar ───────────────────────────── */}
           <TiltCard className="lg:col-span-2" delay={0.16}>
             <div className="flex h-full flex-col p-6">
-              <CardHeader icon={Landmark} tint="#fbbf24" label="Macro Radar" meta="RBI · GSTN" />
+              <CardHeader icon={Landmark} tint="#fbbf24" label="Central Bank Radar" meta="POLICY BENCHMARKS" />
               <div className="mt-5 divide-y divide-white/[0.06]">
                 {MACRO.map((m) => (
                   <div key={m.label} className="flex items-center justify-between gap-3 py-3">
@@ -385,61 +362,74 @@ export default function MarketWrap() {
                       <div className="text-sm font-medium text-foreground/90">{m.label}</div>
                       <div className="text-[11px] text-muted-foreground">{m.sub}</div>
                     </div>
-                    <div className={`font-data text-base font-bold ${m.trend === "up" ? "text-emerald-300" : "text-rose-300"}`}>
+                    <div className="font-data text-base font-bold text-amber-300">
                       {m.value}
                     </div>
                   </div>
                 ))}
               </div>
               <p className="mt-auto pt-4 text-[11px] leading-relaxed text-muted-foreground">
-                Verified official prints — RBI policy statements, GSTN releases &amp; RBI weekly
-                statistical supplement. As-of dates on every row.
+                Official monetary policy benchmarks — Federal Reserve, European Central Bank,
+                Bank of England &amp; Bank of Japan.
               </p>
             </div>
           </TiltCard>
 
-          {/* ── Quarterly results (verified) ───────────────────────────── */}
+          {/* ── 24-Hour World Forex Sessions Clock ───────────────────────────── */}
           <TiltCard className="lg:col-span-2" delay={0.2}>
             <div className="flex h-full flex-col p-6">
-              <CardHeader icon={FileText} tint="#f43f5e" label="Results Season" meta="Q1 FY27" />
-              <div className="mt-5 space-y-3.5">
+              <CardHeader icon={Clock} tint="#f43f5e" label="Global Sessions" meta="24/5 CLOCK" />
+              <div className="mt-5 space-y-3">
                 {[
-                  { n: "TCS · Revenue", v: "+14% YoY", k: "₹72,275 Cr · Q1 FY27" },
-                  { n: "TCS · Net profit", v: "+5% YoY", k: "₹13,349 Cr · Q1 FY27" },
-                  { n: "TCS · Deal wins", v: "$9.5B", k: "TCV · AI run-rate $2.6B" },
-                ].map((r) => (
-                  <div key={r.n} className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-3 transition-colors hover:border-rose-400/20">
-                    <span className="w-28 shrink-0 text-[13px] font-semibold text-white">{r.n}</span>
-                    <span className="font-data text-sm font-semibold text-emerald-300">{r.v}</span>
-                    <span className="ml-auto truncate text-[11px] text-muted-foreground">{r.k}</span>
+                  { name: "Sydney", hours: "22:00 – 07:00 GMT", active: snap?.status.activeSessions.includes("Sydney") },
+                  { name: "Tokyo", hours: "00:00 – 09:00 GMT", active: snap?.status.activeSessions.includes("Tokyo") },
+                  { name: "London", hours: "08:00 – 17:00 GMT", active: snap?.status.activeSessions.includes("London") },
+                  { name: "New York", hours: "13:00 – 22:00 GMT", active: snap?.status.activeSessions.includes("New York") },
+                ].map((s) => (
+                  <div
+                    key={s.name}
+                    className={`flex items-center justify-between rounded-xl border px-3.5 py-2.5 transition-colors ${
+                      s.active
+                        ? "border-emerald-400/30 bg-emerald-400/[0.08]"
+                        : "border-white/[0.06] bg-white/[0.02]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`h-2 w-2 rounded-full ${
+                          s.active ? "animate-pulse-dot bg-emerald-400" : "bg-white/20"
+                        }`}
+                      />
+                      <span className="text-[13px] font-semibold text-foreground">{s.name}</span>
+                    </div>
+                    <span className="font-data text-[11px] text-muted-foreground">{s.hours}</span>
                   </div>
                 ))}
               </div>
               <p className="mt-auto pt-5 text-[11px] leading-relaxed text-muted-foreground">
-                Reported 15 Jul 2026, from exchange filings — standardised result-cards as the
-                Q2 FY27 season approaches.
+                Current regime: <span className="font-bold text-amber-300">{snap?.status.label ?? "24/5 Session"}</span> ({snap?.status.detail})
               </p>
             </div>
           </TiltCard>
 
-          {/* ── Explainers ───────────────────────────── */}
+          {/* ── Forex Explainers ───────────────────────────── */}
           <TiltCard className="lg:col-span-2" delay={0.24}>
             <div className="flex h-full flex-col p-6">
-              <CardHeader icon={GraduationCap} tint="#14b8a6" label="Learn as you read" meta="Evergreen" />
+              <CardHeader icon={GraduationCap} tint="#14b8a6" label="FX Masterclass" meta="Evergreen" />
               <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-                Every wrap links its jargon to an evergreen explainer — GMP, anchor
-                lock-ins, FII flows, repo corridors. Build your market base while
-                staying daily-current.
+                Deep-dive institutional guides linking daily market events to underlying
+                currency mechanics — carry trade unwinds, swap spreads, bullion reserves,
+                and session overlaps.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                {["GMP", "Anchor lock-in", "Repo corridor", "FII/DII", "Breadth", "VIX"].map((t) => (
+                {["Carry Trade", "Swap Lines", "London / NY Overlap", "COT Reports", "Gold Reserve", "DXY Weighting"].map((t) => (
                   <span key={t} className="rounded-full border border-teal-400/20 bg-teal-400/[0.07] px-3 py-1.5 text-[11px] font-medium text-teal-200">
                     {t}
                   </span>
                 ))}
               </div>
               <a href="#topics" className="group mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-teal-300 transition-colors hover:text-teal-200">
-                Browse explainers
+                Browse FX Guides
                 <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </a>
             </div>

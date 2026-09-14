@@ -1,80 +1,38 @@
 "use client";
 
-import { TrendingUp, Network, ShieldCheck, ArrowUpRight } from "lucide-react";
-import { NETWORK } from "@/lib/market-data";
-import { Reveal } from "./Primitives";
+import { ShieldCheck } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="relative mt-auto border-t border-white/[0.07] bg-black/30">
+    <footer className="relative mt-auto border-t border-border bg-card/40 backdrop-blur-md">
       <div className="dot-grid pointer-events-none absolute inset-0 opacity-20 [mask-image:linear-gradient(to_bottom,black,transparent_60%)]" />
 
       <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        {/* network strip */}
-        <Reveal>
-          <div className="glass mb-14 rounded-3xl p-7 sm:p-8">
-            <div className="mb-6 flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-400/15 text-violet-300">
-                <Network className="h-5 w-5" />
-              </span>
-              <div>
-                <h3 className="font-heading text-lg font-bold text-white">ISD Intelligence Network</h3>
-                <p className="text-xs text-muted-foreground">One connected intelligence network — four verticals, one standard of rigour.</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {NETWORK.map((n) => (
-                <div
-                  key={n.name}
-                  className={`group rounded-2xl border p-4 transition-all duration-300 ${
-                    n.live
-                      ? "cursor-pointer border-amber-400/30 bg-amber-400/[0.06] hover:border-amber-400/50"
-                      : "border-white/[0.07] bg-white/[0.02] opacity-70"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={`font-heading text-sm font-bold ${n.live ? "text-amber-300" : "text-foreground/80"}`}>
-                      {n.name}
-                    </span>
-                    {n.live ? (
-                      <ArrowUpRight className="h-4 w-4 text-amber-300 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-                    ) : (
-                      <span className="rounded-full bg-white/[0.07] px-1.5 py-0.5 text-[8px] font-bold tracking-wider text-muted-foreground">
-                        PHASE 2
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">{n.vertical} · {n.desc}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-5">
           {/* brand */}
           <div className="lg:col-span-2">
-            <a href="#top" className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden border border-white/15 shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-                <img src="/icon.png" alt="MarketIntel" className="h-full w-full object-cover rounded-xl" />
-              </span>
-              <span className="flex flex-col leading-none">
-                <span className="font-heading text-lg font-bold tracking-tight text-white">
-                  Market<span className="text-gradient-gold">Intel</span>
-                </span>
-                <span className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-                  ISD Intelligence Network
-                </span>
-              </span>
+            <a
+              href="#top"
+              className="inline-block group mb-5"
+              aria-label="NFX³ — Decode The Market"
+            >
+              <div className="relative inline-flex items-center rounded-2xl bg-[#060812] px-3.5 py-2.5 border border-cyan-500/25 shadow-[0_0_24px_rgba(0,180,255,0.2)] transition-transform duration-300 group-hover:scale-105">
+                <img
+                  src="/nfx-brand.png?v=12"
+                  alt="NFX³ — Decode The Market"
+                  className="h-14 sm:h-16 w-auto object-contain"
+                />
+              </div>
             </a>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Indian market intelligence built on T1 official sources — NSE, BSE, SEBI
-              circulars, RBI releases and PIB economy briefs — distilled into wraps,
-              trackers and explainers that respect your time and your compliance radar.
+              NFX³ Global Markets Intelligence built on verified tier-1 macro sources —
+              Federal Reserve, ECB, BoE, Bank of Japan, CFTC COT positioning, and ForexFactory
+              economic indicators — decoded into institutional wraps, real-time calendars, and
+              currency trackers 24 hours a day, 5 days a week.
             </p>
-            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-4 py-2 text-xs font-medium text-emerald-300">
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-4 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-300">
               <ShieldCheck className="h-4 w-4" />
-              Strictly informational · never investment advice
+              Strictly informational · Institutional macro research
             </div>
           </div>
 
@@ -82,24 +40,42 @@ export default function Footer() {
           {[
             {
               h: "Coverage",
-              links: ["Market Wrap", "IPO Tracker", "Quarterly Results", "FII / DII", "Macro Decoded"],
+              links: [
+                { name: "Daily FX Wrap", href: "#wrap" },
+                { name: "ForexFactory Calendar", href: "#calendar" },
+                { name: "CFTC COT Positioning", href: "#flows" },
+                { name: "Central Bank Radar", href: "#intel" },
+                { name: "Gold & Bullion Track", href: "#top" },
+              ],
             },
             {
               h: "Company",
-              links: ["About ISD Info Solutions", "Our Data Standards", "Editorial Policy", "Contact Desk", "Careers"],
+              links: [
+                { name: "About NFX³", href: "#top" },
+                { name: "Data Architecture", href: "#pipeline" },
+                { name: "Macro Editorial Policy", href: "#topics" },
+                { name: "Daily FX Wrap", href: "#wrap" },
+                { name: "API Access", href: "#top" },
+              ],
             },
             {
-              h: "Legal",
-              links: ["Disclaimer", "Privacy Policy", "Terms of Use", "Attribution Policy", "Grievance Officer"],
+              h: "Legal & Standards",
+              links: [
+                { name: "Forex Risk Warning", href: "#top" },
+                { name: "CFTC / NFA Disclosures", href: "#top" },
+                { name: "Privacy Policy", href: "#top" },
+                { name: "Terms of Use", href: "#top" },
+                { name: "Attribution Policy", href: "#top" },
+              ],
             },
           ].map((col) => (
             <div key={col.h}>
               <h4 className="text-[11px] font-bold uppercase tracking-[0.24em] text-foreground/70">{col.h}</h4>
               <ul className="mt-5 space-y-3">
                 {col.links.map((l) => (
-                  <li key={l}>
-                    <a href="#top" className="text-sm text-muted-foreground transition-colors duration-300 hover:text-amber-300">
-                      {l}
+                  <li key={l.name}>
+                    <a href={l.href} className="text-sm text-muted-foreground transition-colors duration-300 hover:text-amber-500">
+                      {l.name}
                     </a>
                   </li>
                 ))}
@@ -109,24 +85,25 @@ export default function Footer() {
         </div>
 
         {/* compliance disclaimer */}
-        <div className="mt-14 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
-          <p className="text-[11px] leading-relaxed text-muted-foreground/80">
-            <span className="font-semibold text-foreground/70">Disclaimer:</span> MarketIntel is a
-            news-and-education property of ISD Info Solutions. All content on this page is strictly
-            informational and educational; it does not constitute investment advice, research
-            recommendations, or solicitation to trade in securities as regulated by SEBI. Market
-            values shown are real exchange quotes (NSE / BSE and global reference instruments)
-            served via our market-data provider and may be delayed up to 15 minutes. Institutional
-            flows, IPO records and macro prints are compiled from official exchange, depository
-            and regulator disclosures, with sources and as-of dates shown inline.
-            Consult a SEBI-registered investment adviser before making financial decisions.
+        <div className="mt-14 rounded-2xl border border-border bg-card/60 p-5">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            <span className="font-semibold text-foreground/80">Risk Warning & Educational Notice:</span> NFX³
+            is an institutional research and financial education platform. All content on this
+            platform is strictly informational; it does not constitute financial, investment, or trading advice, nor is
+            it a solicitation to trade foreign exchange, spot metals, or leveraged derivatives. Foreign exchange (Forex)
+            and bullion trading carry a high level of risk to capital and may not be suitable for all market participants.
+            Live quotes (XAU/USD, EUR/USD, GBP/USD, USD/JPY, DXY) derive from interbank reference feeds, COMEX futures,
+            and global market data APIs and may experience latency during market transitions. Economic calendar prints,
+            consensus forecasts, and CFTC Commitments of Traders (COT) disclosures are compiled from official statistical
+            bureaus, central banks, and regulatory reporting repositories. Consult an accredited financial advisor
+            registered with your jurisdiction (e.g., CFTC/NFA, FCA, ESMA, ASIC) before executing financial operations.
           </p>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-white/[0.07] pt-8 sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} ISD Info Solutions. MarketIntel —{" "}
-            <span className="text-foreground/70">A property of ISD Info Solutions.</span>
+            © {new Date().getFullYear()} NFX³ —{" "}
+            <span className="text-foreground/80">Global Forex & Bullion Intelligence.</span>
           </p>
         </div>
       </div>

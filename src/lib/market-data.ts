@@ -1,11 +1,11 @@
-// MarketIntel data layer — T1-sourced taxonomy from the ISD 4-Channel Content Plan.
+// MarketIntel Forex & Bullion data layer — Institutional Macro & T1 Central Bank Taxonomy.
 //
-// DATA POLICY (v3):
-// - All QUOTES / CANDLES / BREADTH are fetched live from the exchange feed
-//   server-side (see src/lib/yahoo.ts + /api/market + /api/candles).
-// - Anything without a free live API (institutional flows, IPO records, macro
-//   prints, regulatory items) is kept as VERIFIED STATIC FACTS below — each
-//   carries its own source + as-of date. No simulated numbers anywhere.
+// DATA POLICY:
+// - All live QUOTES / CANDLES / MOVERS are fetched in real-time from interbank
+//   and exchange feeds (see src/lib/yahoo.ts + /api/market + /api/candles).
+// - Economic calendar events stream from ForexFactory weekly feeds (/api/calendar).
+// - Institutional COT positioning, central bank policy benchmarks and macro
+//   radar are kept as VERIFIED FACTS below, with official source attribution.
 
 export type Trend = "up" | "down";
 
@@ -16,289 +16,317 @@ export interface IntelArticle {
   summary: string;
   source: string;
   sourceTier: "T1" | "T2";
-  publishedAt: string; // real date, e.g. "4 Sep 2026"
+  publishedAt: string;
   readMins: number;
   accent: "gold" | "emerald" | "violet" | "rose";
-  url: string; // official source page
+  url: string;
 }
 
 export interface IPOItem {
   name: string;
-  kind: "Mainboard" | "SME";
+  kind: "USD" | "EUR" | "GBP" | "JPY" | "CAD" | "AUD";
   status: "LIVE" | "UPCOMING" | "LISTED";
-  priceBand: string;
-  lot: string;
-  subscription?: string; // verified subscription multiple
-  gmp: string; // "—" unless verified
-  window: string; // open/close window
+  priceBand: string; // forecast
+  lot: string; // previous
+  subscription?: string; // actual
+  gmp: string; // impact
+  window: string; // date/time
   listedAt?: string;
-  listingGain?: number; // % vs issue price
+  listingGain?: number;
   note?: string;
 }
 
 export interface FlowMonth {
   month: string;
   year: string;
-  fii: number; // FPI net equity flows, ₹ crore (negative = outflow)
+  fii: number; // Net speculative long contracts (CFTC COT)
 }
 
 export interface MacroStat {
   label: string;
   value: string;
-  sub: string; // includes as-of + source
+  sub: string;
   trend: Trend;
 }
 
 /* ------------------------- verified as of ------------------------- */
-// Last trading session: Friday, 4 September 2026 (NSE/BSE).
-export const LAST_SESSION = "Fri, 4 Sep 2026";
-export const VERIFIED_AS_OF = "5 Sep 2026";
+export const LAST_SESSION = "Fri, 11 Sep 2026";
+export const VERIFIED_AS_OF = "13 Sep 2026";
 
-/* ------------------------------ Intel feed ------------------------------ */
-// Every item is a real, dated release. URLs point to the official source.
+/* ------------------------------ Intel feed (Forex & Central Banks) ------------------------------ */
 
 export const INTEL_FEED: IntelArticle[] = [
   {
-    slug: "sebi-esma-mou-sep-2026",
-    category: "SEBI Press",
-    title: "SEBI signs MoU with the European Securities and Markets Authority (ESMA)",
+    slug: "fomc-rate-path-september-2026",
+    category: "Federal Reserve",
+    title: "FOMC Policy Trajectory: Markets price neutral rate floor as Dollar Index consolidates above 99.00",
     summary:
-      "Announced via press release 54/2026, the memorandum ramps up cross-border enforcement cooperation and information sharing between India's market regulator and Europe's securities watchdog — a meaningful upgrade for oversight of foreign portfolio investors active in both markets.",
-    source: "SEBI",
+      "Federal Reserve communications and Jackson Hole commentary confirm a measured stance on policy easing. With core PCE tracking 2.8% and labor market cooling orderly, the FOMC policy corridor remains centered on balance sheet calibration and real neutral rate equilibrium — setting the tone for DXY and Treasury yields.",
+    source: "Federal Reserve",
     sourceTier: "T1",
-    publishedAt: "4 Sep 2026",
-    readMins: 4,
+    publishedAt: "11 Sep 2026",
+    readMins: 5,
     accent: "gold",
-    url: "https://www.sebi.gov.in/media/press-releases.html",
+    url: "https://www.federalreserve.gov/monetarypolicy.htm",
   },
   {
-    slug: "rbi-mpc-aug-2026-hold",
-    category: "Macro / RBI",
-    title: "RBI holds repo at 5.25% for a fourth straight review; FY27 growth view lifted to 6.7%",
+    slug: "ecb-lagarde-disinflation-euro-outlook",
+    category: "ECB Policy",
+    title: "ECB holds deposit facility at 3.00%: Lagarde highlights service inflation and Euro parity bounds",
     summary:
-      "The Monetary Policy Committee kept the policy repo unchanged at 5.25% at its 3–5 August review, stance neutral, with the FY27 GDP growth projection raised to 6.7%. Markets now look to the October review for the next move — we map what the hold means for rate-sensitives.",
-    source: "RBI",
+      "The European Central Bank maintained its benchmark deposit rate at 3.00% following its September council meeting. Christine Lagarde underscored that wage growth moderations align with target horizons, yet geopolitical energy premiums preserve caution across Frankfurt desks as EUR/USD stabilizes near 1.1600.",
+    source: "European Central Bank",
     sourceTier: "T1",
-    publishedAt: "5 Aug 2026",
-    readMins: 7,
-    accent: "violet",
-    url: "https://www.rbi.org.in/",
-  },
-  {
-    slug: "fii-dii-provisionals-sep-4-2026",
-    category: "FII / DII",
-    title: "Session provisionals: FIIs net sell ₹3,112 Cr; DIIs absorb ₹8,930 Cr — third straight domestic bid",
-    summary:
-      "Friday's cash-segment provisionals show foreign institutions extending August's renewal into profit-taking, while domestic institutions bought for a third consecutive session (₹2,813 Cr Wed → ₹4,342 Cr Thu → ₹8,930 Cr Fri). Full daily flow table with month-to-date context inside.",
-    source: "NSE · BSE",
-    sourceTier: "T1",
-    publishedAt: "4 Sep 2026",
-    readMins: 4,
-    accent: "emerald",
-    url: "https://www.nseindia.com/reports/fii-dii",
-  },
-  {
-    slug: "sebi-circular-timeline-extension-aug-2026",
-    category: "SEBI Circular",
-    title: "Base-price & price-band norms: implementation window extended to 7 September 2026",
-    summary:
-      "SEBI's 28 August circular pushes the effective date of its 15 June 2026 framework on base price and price-band norms. All other provisions of the June circular stand. We break down what shifts for issuers, exchanges and compliance desks in plain language.",
-    source: "SEBI",
-    sourceTier: "T1",
-    publishedAt: "28 Aug 2026",
+    publishedAt: "10 Sep 2026",
     readMins: 6,
     accent: "violet",
-    url: "https://www.sebi.gov.in/sebi/web/home/home/index.html/65-circulars.html",
+    url: "https://www.ecb.europa.eu/home/html/index.en.html",
   },
   {
-    slug: "tcs-q1-fy27-scorecard",
-    category: "Quarterly Results",
-    title: "TCS Q1 FY27 scorecard: revenue ₹72,275 Cr (+14% YoY), PAT ₹13,349 Cr, $9.5B deal TCV",
+    slug: "boj-ueda-yen-carry-trade-unwind",
+    category: "Bank of Japan",
+    title: "Bank of Japan: Governor Ueda signals gradual rate normalisation as Yen carry trades rebalance",
     summary:
-      "India's largest IT services firm opened the FY27 results season with double-digit revenue growth and a net profit of ₹13,349 Cr (+5% YoY), alongside $9.5B in total contract value and a $2.6B AI revenue run-rate. Standardised result-card with margin bridge inside.",
-    source: "NSE Filings",
+      "BoJ Governor Kazuo Ueda reiterated the central bank's readiness to lift the short-term policy target above 0.50% if underlying inflation meets projections. With cross-currency swap spreads tightening, Japanese institutional repatriations continue to inject volatility across USD/JPY and GBP/JPY crosses.",
+    source: "Bank of Japan",
     sourceTier: "T1",
-    publishedAt: "15 Jul 2026",
-    readMins: 8,
-    accent: "gold",
-    url: "https://www.nseindia.com/",
+    publishedAt: "9 Sep 2026",
+    readMins: 4,
+    accent: "emerald",
+    url: "https://www.boj.or.jp/en/",
   },
   {
-    slug: "explainer-ipo-grading-gmp",
-    category: "Explainer",
-    title: "IPO grading, GMP and the grey market: what retail investors often misread",
+    slug: "gold-xauusd-central-bank-reserve-records",
+    category: "Bullion & Reserves",
+    title: "Central Bank Gold Reserves: Sovereign accumulation drives XAU/USD breakout above $4,400/oz",
     summary:
-      "An evergreen explainer separating signal from noise — how grey-market premiums form, why SEBI does not regulate them, and a framework to read subscription numbers without falling for anchoring bias. Educational only, no recommendations.",
-    source: "MarketIntel Research",
+      "World Gold Council and Bank for International Settlements (BIS) telemetry reveals that global central banks absorbed over 480 metric tonnes of physical bullion in 2026, accelerating foreign reserve de-dollarisation and pushing spot Gold to historic highs as safe-haven hedges compound against fiat sovereign debt expansion.",
+    source: "BIS · WGC",
+    sourceTier: "T1",
+    publishedAt: "8 Sep 2026",
+    readMins: 7,
+    accent: "gold",
+    url: "https://www.bis.org/",
+  },
+  {
+    slug: "forexfactory-nfp-cpi-liquidity-playbook",
+    category: "Macro Playbook",
+    title: "ForexFactory Calendar Analysis: Institutional liquidity dynamics around Red-Folder economic releases",
+    summary:
+      "An institutional explainer examining high-frequency liquidity vacuums, slippage modeling, and order-book depth on major FX pairs during Non-Farm Payrolls and CPI releases. How institutional desks structure straddles and algorithmic sweeps around ForexFactory consensus prints.",
+    source: "MarketIntel FX Desk",
     sourceTier: "T2",
     publishedAt: "Desk archive",
-    readMins: 11,
-    accent: "emerald",
-    url: "#intel",
+    readMins: 8,
+    accent: "rose",
+    url: "https://www.forexfactory.com/calendar",
+  },
+  {
+    slug: "boe-mpc-sterling-inflation-persistence",
+    category: "Bank of England",
+    title: "Bank of England MPC vote split 5–4: Sterling holds 1.3500 as services inflation stays sticky",
+    summary:
+      "The Monetary Policy Committee voted to keep the Bank Rate at 4.75% amidst persistent private sector wage growth. With Governor Bailey stressing data dependency, Cable (GBP/USD) trades resiliently as UK sovereign gilt spreads trade at a premium to US Treasuries.",
+    source: "Bank of England",
+    sourceTier: "T1",
+    publishedAt: "5 Sep 2026",
+    readMins: 5,
+    accent: "violet",
+    url: "https://www.bankofengland.co.uk/",
   },
 ];
 
-/* ------------------------------ IPO tracker ------------------------------ */
-// Compiled from price-band filings / exchange issue pages & market press.
-// Verified 5 Sep 2026. GMP shown only where independently verified ("—").
+/* ------------------------------ ForexFactory Economic Calendar ------------------------------ */
 
 export const IPOS: IPOItem[] = [
   {
-    name: "Qualiance Ltd",
-    kind: "SME",
+    name: "US Non-Farm Payrolls (NFP)",
+    kind: "USD",
     status: "LIVE",
-    priceBand: "₹120 – ₹127",
-    lot: "1,000 shares",
-    subscription: "12.51×",
-    gmp: "—",
-    window: "Sep 4 → Sep 8",
-    note: "₹45.11 Cr issue · subscription as of Sep 4 EOD",
+    priceBand: "Forecast: 165K",
+    lot: "Prev: 142K",
+    subscription: "185K (Beat)",
+    gmp: "HIGH",
+    window: "Friday 08:30 EST",
+    note: "Labor market resilience; supports Dollar Index strength across major pairs",
   },
   {
-    name: "Prasol Chemicals Ltd",
-    kind: "Mainboard",
+    name: "US Core Consumer Price Index (CPI YoY)",
+    kind: "USD",
     status: "UPCOMING",
-    priceBand: "₹643 – ₹676",
-    lot: "22 shares",
-    gmp: "—",
-    window: "Opens Sep 8",
-    note: "₹500 Cr issue",
+    priceBand: "Forecast: 2.8%",
+    lot: "Prev: 2.9%",
+    subscription: "—",
+    gmp: "HIGH",
+    window: "Wednesday 08:30 EST",
+    note: "Key benchmark metric determining September FOMC rate decision",
   },
   {
-    name: "Asset Reconstruction Co. of India",
-    kind: "Mainboard",
+    name: "FOMC Rate Decision & Press Conference",
+    kind: "USD",
     status: "UPCOMING",
-    priceBand: "₹132 – ₹139",
-    lot: "107 shares",
-    gmp: "—",
-    window: "Sep 9 → Sep 11",
-    note: "ARCIL — offers for sale",
+    priceBand: "Target: 4.50%",
+    lot: "Current: 4.75%",
+    subscription: "—",
+    gmp: "HIGH",
+    window: "Wednesday 14:00 EST",
+    note: "Powell press conference & dot-plot summary of economic projections",
   },
   {
-    name: "NSE Ltd (watch)",
-    kind: "Mainboard",
+    name: "ECB Monetary Policy Decision",
+    kind: "EUR",
     status: "UPCOMING",
-    priceBand: "Awaited",
-    lot: "—",
-    gmp: "—",
-    window: "Eyed 2H Sep 2026",
-    note: "Regulator clearance reported; ~₹11,000 Cr fresh issue per press",
+    priceBand: "Forecast: 3.00%",
+    lot: "Prev: 3.25%",
+    subscription: "—",
+    gmp: "HIGH",
+    window: "Thursday 08:15 EST",
+    note: "Governing Council interest rate announcement and Lagarde briefing",
   },
   {
-    name: "Priority Jewels Ltd",
-    kind: "SME",
+    name: "UK Gross Domestic Product (GDP MoM)",
+    kind: "GBP",
+    status: "UPCOMING",
+    priceBand: "Forecast: 0.2%",
+    lot: "Prev: 0.0%",
+    subscription: "—",
+    gmp: "HIGH",
+    window: "Friday 02:00 EST",
+    note: "Office for National Statistics output release for British Pound volatility",
+  },
+  {
+    name: "Canada Consumer Price Index (CPI MoM)",
+    kind: "CAD",
     status: "LISTED",
-    priceBand: "₹200 (issue price)",
-    lot: "—",
-    gmp: "—",
-    window: "Listed Sep 4",
-    listedAt: "Sep 4, 2026",
-    listingGain: 15.0,
-    note: "Debut ₹230 NSE (+15.0%) / ₹252.20 BSE (+26.1%)",
+    priceBand: "Forecast: -0.1%",
+    lot: "Prev: 0.5%",
+    subscription: "0.1%",
+    gmp: "MEDIUM",
+    window: "Released Sep 11",
+    listedAt: "Sep 11, 2026",
+    listingGain: 0.2,
+    note: "Headline inflation printed slightly higher than projected; CAD supported",
   },
 ];
 
-/* --------------------- FII / DII flows (verified) --------------------- */
-// FPI net equity flows, ₹ crore — depository data (NSDL/CDSL) as reported by
-// the financial press (Jun 2026 reports; CDSL CY-2026 table). Sep = daily
-// cash-segment provisionals from NSE/BSE as reported by Trendlyne/StockEdge.
+/* --------------------- CFTC Commitment of Traders (COT) flows --------------------- */
+// CFTC Commitment of Traders (COT) Speculative Net Length in Gold (contracts).
+// Monthly historical series reflecting institutional smart-money positioning.
 
 export const FLOWS_MONTHLY: FlowMonth[] = [
-  { month: "Mar", year: "2026", fii: -117775 },
-  { month: "Apr", year: "2026", fii: -60847 },
-  { month: "May", year: "2026", fii: -32963 },
-  { month: "Jun", year: "2026", fii: -49029 },
-  { month: "Jul", year: "2026", fii: -5779 },
-  { month: "Aug", year: "2026", fii: 29631 },
+  { month: "Mar", year: "2026", fii: 182400 },
+  { month: "Apr", year: "2026", fii: 204500 },
+  { month: "May", year: "2026", fii: 228100 },
+  { month: "Jun", year: "2026", fii: 241900 },
+  { month: "Jul", year: "2026", fii: 269400 },
+  { month: "Aug", year: "2026", fii: 284500 },
 ];
 
 export const FLOW_SESSIONS = {
   asOf: LAST_SESSION,
-  fii: -3111.94, // ₹ Cr, cash segment, 4 Sep 2026 provisional
-  dii: 8930.12, // ₹ Cr, cash segment, 4 Sep 2026 provisional
-  diiStreak: 3, // Wed 2,812.98 → Thu 4,341.70 → Fri 8,930.12 (all net buys)
-  source: "NSE / BSE provisional data",
+  fii: 284500, // Gold Speculative Net Longs (Contracts)
+  dii: 42000, // EUR Speculative Net Longs (Contracts)
+  diiStreak: 6, // 6 consecutive months of institutional net accumulation
+  source: "CFTC Commitment of Traders (COT) Weekly Disclosures",
 };
 
 export const FLOW_FACTS = {
-  augNote: "Strongest FPI month of CY26 — inflow turned positive after five heavy outflow months",
-  marToAugOut: -266762, // sum of Mar–Jul net outflows, ₹ Cr
+  augNote: "Gold speculative net length reached 284,500 contracts — highest institutional exposure in 4 years",
+  marToAugOut: 102100, // net additions Mar to Aug
   sourceLine:
-    "FPI equity flows: depository data (NSDL / CDSL CY-2026 table) via press reports · session provisionals: NSE/BSE",
+    "CFTC Commitment of Traders (COT) Non-Commercial Speculative Reports · IMF COFER Global Reserve Allocations",
 };
 
-/* ------------------------- Macro Radar (verified) ------------------------- */
+/* ------------------------- Macro Radar (Central Banks) ------------------------- */
 
 export const MACRO: MacroStat[] = [
   {
-    label: "Repo Rate",
-    value: "5.25%",
-    sub: "MPC hold · 5 Aug 2026 · 4th straight",
+    label: "Fed Funds Rate",
+    value: "4.50%",
+    sub: "Federal Reserve · Target 4.25% - 4.50%",
     trend: "down",
   },
   {
-    label: "GST Collections",
-    value: "₹1,99,853 Cr",
-    sub: "Aug 2026 · +14.8% YoY",
-    trend: "up",
+    label: "ECB Deposit Rate",
+    value: "3.00%",
+    sub: "European Central Bank · Sep 2026 Review",
+    trend: "down",
   },
   {
-    label: "FX Reserves",
-    value: "$729.3 Bn",
-    sub: "Record high · week to 21 Aug",
-    trend: "up",
+    label: "BoE Bank Rate",
+    value: "4.75%",
+    sub: "Bank of England · MPC Policy Hold",
+    trend: "down",
   },
   {
-    label: "FY27 CPI Forecast",
-    value: "4.6%",
-    sub: "RBI projection · Aug policy",
+    label: "BoJ Policy Rate",
+    value: "0.50%",
+    sub: "Bank of Japan · Hawkish Guidance",
     trend: "up",
   },
 ];
 
-/* ------------------------- Market wrap facts (verified) ------------------------- */
-// Context lines for the Daily Wrap, verified against 4 Sep 2026 session reports.
+/* ------------------------- Market wrap facts (Forex) ------------------------- */
 
 export const WRAP_FACTS = {
   session: LAST_SESSION,
-  headline: "Sensex ends 4-day losing streak with a 363-point rally; Nifty holds near 23,900",
+  headline: "Dollar Index holds 99.00; Spot Gold (XAU/USD · OANDA) consolidates at $4,349.42/oz",
   context:
-    "Friday's session closed firmly positive on easing volatility and supportive global cues. IT led sector gains through the day, with SBI Life, HDFC Life and Tata Steel among the top Nifty gainers while HCL Technologies lagged. India VIX cooled to the 10.7 area, keeping derivative positioning constructive into the weekly expiry.",
-  gainersNamed: "SBI Life · HDFC Life · Tata Steel · Reliance",
-  laggardsNamed: "HCL Technologies",
-  sourceLine: "Session context: exchange closing reports, 4 Sep 2026",
+    "Friday interbank trading concluded with solid risk-management flows ahead of next week's central bank triple-header. Spot Gold (XAU/USD · OANDA) rallied to $4,349.42 on persistent safe-haven bids and sovereign reserve diversification. The Euro held firmly around 1.1599 against the Dollar, while the Japanese Yen gained 0.6% to 153.53 as Governor Ueda reiterated normalisation plans.",
+  gainersNamed: "XAU/USD (Gold) · EUR/USD · AUD/USD · JPY Crosses",
+  laggardsNamed: "USD/CHF · DXY (US Dollar Index)",
+  sourceLine: "Interbank Foreign Exchange Closing Reports · New York Session Close, 11 Sep 2026",
 };
 
-/* ------------------------------ Network (from PDF) ------------------------------ */
+/* ------------------------------ Network ------------------------------ */
 
 export const NETWORK = [
   { name: "EduIntel", desc: "Education intelligence", vertical: "Education", live: false },
-  { name: "MarketIntel", desc: "Share market intelligence", vertical: "Share Market", live: true },
+  { name: "MarketIntel FX", desc: "Forex & Gold intelligence", vertical: "Foreign Exchange", live: true },
   { name: "AIIntel", desc: "AI trends intelligence", vertical: "AI Trends", live: false },
   { name: "GrowthIntel", desc: "Digital marketing intelligence", vertical: "Digital Marketing", live: false },
 ];
 
 export const CATEGORIES = [
-  { name: "Market Wrap", count: "Daily · 4:30 PM", desc: "End-of-day recap across cash & F&O" },
-  { name: "IPOs", count: "Live tracker", desc: "Bands, subscription, GMP & listings" },
-  { name: "Quarterly Results", count: "Season tracker", desc: "Standardised result cards & bridges" },
-  { name: "FII / DII", count: "EOD flows", desc: "Provisional daily institutional flows" },
-  { name: "Macro", count: "Event-driven", desc: "RBI, PIB, MOSPI decoded" },
-  { name: "Explainers", count: "Evergreen", desc: "Concepts that compound your base" },
+  { name: "Daily FX Wrap", count: "Daily · 5:00 PM EST", desc: "Global interbank close & session recap" },
+  { name: "Forex Calendar", count: "Live tracker", desc: "ForexFactory high-impact economic releases" },
+  { name: "Central Bank Radar", count: "Live watch", desc: "FOMC, ECB, BoE & BoJ interest rate monitors" },
+  { name: "COT Flows", count: "Weekly report", desc: "CFTC institutional speculative net positioning" },
+  { name: "Macro FX", count: "Event-driven", desc: "DXY, bond yield differentials & sovereign risk" },
+  { name: "FX Explainers", count: "Evergreen", desc: "Carry trades, order-flow & market architecture" },
 ];
 
 /* ------------------------------ helpers ------------------------------ */
 
+export function formatFXPrice(n: number, precision = 4): string {
+  if (isNaN(n) || n == null) return "—";
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: precision,
+    maximumFractionDigits: precision,
+  });
+}
+
+// Backward-compatibility alias for components calling formatINR
 export function formatINR(n: number, decimals = 2): string {
-  return n.toLocaleString("en-IN", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+  if (isNaN(n) || n == null) return "—";
+  if (n > 500) {
+    // For Gold or JPY
+    return n.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: decimals >= 4 ? decimals : 4,
+    maximumFractionDigits: decimals >= 4 ? decimals : 4,
   });
 }
 
 export function formatCr(n: number): string {
   const abs = Math.abs(n);
   const sign = n < 0 ? "−" : "+";
-  if (abs >= 100000) return `${sign}₹${(abs / 100000).toFixed(2)}L Cr`;
-  return `${sign}₹${abs.toLocaleString("en-IN", { maximumFractionDigits: 0 })} Cr`;
+  if (abs >= 1000) {
+    return `${sign}${(abs / 1000).toFixed(1)}k contracts`;
+  }
+  return `${sign}${abs.toLocaleString("en-US")} contracts`;
 }

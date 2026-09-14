@@ -39,12 +39,12 @@ export default function Newsletter() {
               </motion.div>
 
               <h2 className="font-heading mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                The 4:30 Wrap lands before your <span className="text-gradient-gold">evening chai.</span>
+                The Global FX Wrap lands ahead of the <span className="text-gradient-gold">London crossover.</span>
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                One email. Market wrap, IPO street, FII/DII flows and one evergreen
-                explainer — in plain language, sourced from official filings, gone in a
-                4-minute read. Free forever.
+                One concise briefing. Daily currency drivers, ForexFactory calendar releases,
+                CFTC speculative positioning, and XAU/USD technical levels — distilled from official
+                central bank releases in a 4-minute read. Free forever.
               </p>
 
               <AnimatePresence mode="wait">
@@ -85,7 +85,7 @@ export default function Newsletter() {
                   >
                     <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                     <p className="text-sm font-semibold text-emerald-200">
-                      You&apos;re in. First wrap lands at 4:30 PM tomorrow.
+                      You&apos;re in. First wrap lands at 06:30 GMT ahead of London open.
                     </p>
                   </motion.div>
                 )}

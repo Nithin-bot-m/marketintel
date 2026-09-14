@@ -9,11 +9,11 @@ const RANGES = new Set(["1d", "5d", "1mo"]);
 // Symbol whitelist: letters, digits, dot, dash, caret, =
 const SAFE_SYM = /^[A-Za-z0-9.\-^=]{1,15}$/;
 
-// GET /api/candles?symbol=^NSEI&interval=1m&range=1d
-// Real OHLC bars from the exchange feed (Yahoo Finance). No synthetic data.
+// GET /api/candles?symbol=GC=F&interval=1m&range=1d
+// Real OHLC bars from the interbank/futures feed (Yahoo Finance). No synthetic data.
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
-  const symbol = sp.get("symbol") ?? "^NSEI";
+  const symbol = sp.get("symbol") ?? "GC=F";
   const interval = (sp.get("interval") ?? "1m") as "1m" | "5m" | "1d";
   const range = (sp.get("range") ?? "1d") as "1d" | "5d" | "1mo";
 

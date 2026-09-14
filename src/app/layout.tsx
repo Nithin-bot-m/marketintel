@@ -22,39 +22,65 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MarketIntel — Indian Market Intelligence, Decoded Daily | ISD Intelligence Network",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://nfx3.marketintel.io"
+  ),
+  title: "NFX³ — Decode The Market | Global Forex & Bullion Intelligence",
   description:
-    "MarketIntel by ISD Info Solutions: SEBI-aware, strictly informational coverage of Indian markets — daily market wraps, IPO tracking, quarterly results, FII/DII flows and macro explainers, built on T1 official sources (NSE, BSE, SEBI, RBI, PIB).",
+    "NFX³: Institutional, real-time coverage of global foreign exchange and bullion markets — live XAU/USD 1m candlestick telemetry, ForexFactory economic calendar, CFTC COT speculative flows, central bank rate radars, and macro intelligence.",
   keywords: [
-    "MarketIntel",
-    "Indian stock market",
-    "NSE",
-    "BSE",
-    "SEBI",
-    "RBI",
-    "IPO tracker",
-    "FII DII data",
-    "market wrap",
-    "ISD Info Solutions",
+    "NFX³",
+    "Decode The Market",
+    "Forex",
+    "XAUUSD",
+    "Gold Spot",
+    "ForexFactory Calendar",
+    "DXY Dollar Index",
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "CFTC COT positioning",
+    "Central Bank rates",
   ],
-  authors: [{ name: "ISD Info Solutions" }],
+  authors: [{ name: "NFX³" }],
   openGraph: {
-    title: "MarketIntel — Indian Market Intelligence, Decoded Daily",
+    title: "NFX³ — Decode The Market | Global Forex & Bullion Intelligence",
     description:
-      "T1-sourced market wraps, IPO intelligence, FII/DII flows and macro explainers. A property of ISD Info Solutions.",
-    siteName: "MarketIntel",
+      "Institutional real-time global Forex & Bullion market intelligence — live XAU/USD 1-minute streaming telemetry, ForexFactory economic calendar, and CFTC COT flows.",
+    url: "/",
+    siteName: "NFX³",
+    locale: "en_US",
     type: "website",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "NFX³ — Decode The Market | Global Forex & Bullion Intelligence",
+        type: "image/jpeg",
+      },
+      {
+        url: "/nfx-logo.png",
+        width: 800,
+        height: 800,
+        alt: "NFX³ — Decode The Market",
+        type: "image/png",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "MarketIntel — Indian Market Intelligence",
-    description: "Decoding Indian markets daily. A property of ISD Info Solutions.",
+    title: "NFX³ — Decode The Market | Global Forex & Bullion Intelligence",
+    description: "Institutional real-time global Forex & Bullion market intelligence 24/5.",
+    images: ["/og-image.jpg"],
   },
   icons: {
     icon: [
+      { url: "/icon.png", sizes: "48x48", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon.png", type: "image/png" },
     ],
+    shortcut: "/favicon.ico",
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
@@ -74,6 +100,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark overflow-x-hidden max-w-full" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var t = localStorage.getItem('marketintel_theme');
+                if (t === 'light') {
+                  document.documentElement.classList.remove('dark');
+                  document.documentElement.classList.add('light');
+                  document.documentElement.setAttribute('data-theme', 'light');
+                  document.documentElement.style.colorScheme = 'light';
+                }
+              } catch(e){}
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground font-body overflow-x-hidden max-w-full w-full`}
       >

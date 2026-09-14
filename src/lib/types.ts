@@ -1,14 +1,18 @@
 // Shared types for live market data — used by server routes and client components.
 
 export interface LiveQuote {
-  symbol: string; // display symbol e.g. "NIFTY 50" / "RELIANCE"
-  name: string; // full name
+  symbol: string; // display symbol e.g. "XAU/USD" / "EUR/USD" / "GBP/USD"
+  name: string; // full name e.g. "Gold / US Dollar"
   price: number;
   prevClose: number;
   change: number;
   changePct: number;
   dayHigh?: number;
   dayLow?: number;
+  bid?: number;
+  ask?: number;
+  precision?: number; // 2 for Gold/JPY, 4 for EUR/USD, etc.
+  source?: string; // e.g. "OANDA", "COMEX"
   asOf?: number; // regularMarketTime (ms)
 }
 
@@ -17,11 +21,13 @@ export interface Ticker extends LiveQuote {
 }
 
 export interface MarketStatus {
-  state: "open" | "closed" | "preopen";
-  label: string; // "MARKET LIVE" / "MARKET CLOSED" / "PRE-OPEN"
-  detail: string; // "Closes 3:30 PM IST" / "Opens Mon 9:15 AM IST"
-  istTime: string; // "14:32:08"
-  istDate: string; // "Fri, 4 Sep 2026"
+  state: "open" | "closed";
+  label: string; // "LONDON · NY OVERLAP" / "ASIAN SESSION" / "WEEKEND CLOSE"
+  detail: string; // "Peak interbank liquidity" / "Opens Sun 5:00 PM EST"
+  activeSessions: string[]; // ["London", "New York"]
+  gmtTime: string; // "14:32:08 GMT"
+  gmtDate: string; // "Fri, 11 Sep 2026"
+  sessionTime?: string; // friendly session clock
 }
 
 export interface Mover {
@@ -29,15 +35,36 @@ export interface Mover {
   name: string;
   changePct: number;
   price: number;
+  precision?: number;
+}
+
+export interface EconomicEvent {
+  title: string;
+  country: string;
+  currency: string;
+  date: string; // ISO string
+  impact: "High" | "Medium" | "Low";
+  forecast: string;
+  previous: string;
+  actual?: string;
+  note?: string;
+}
+
+export interface CurrencyStrength {
+  currency: string;
+  score: number;
+  changePct: number;
+  sentiment: "bullish" | "bearish" | "neutral";
 }
 
 export interface MarketSnapshot {
   ts: number;
   stale: boolean; // true when serving last-good cached payload
   status: MarketStatus;
-  indices: LiveQuote[]; // NIFTY 50, SENSEX, NIFTY BANK, NIFTY IT
+  indices: LiveQuote[]; // Majors: XAU/USD, EUR/USD, GBP/USD, USD/JPY
+  dxy: { price: number; changePct: number } | null;
   vix: { price: number; changePct: number } | null;
-  sectors: { symbol: string; label: string; price: number; changePct: number }[];
+  sectors: { symbol: string; label: string; price: number; changePct: number }[]; // Currency strength / Crosses
   tickers: Ticker[]; // ticker tape
   breadth: {
     advancers: number;
@@ -47,6 +74,7 @@ export interface MarketSnapshot {
     universe: string;
   } | null;
   movers: { gainers: Mover[]; losers: Mover[] } | null;
+  calendar?: EconomicEvent[];
 }
 
 /** A single OHLC bar from the live feed (t = bar open time, ms epoch). */
@@ -68,3 +96,4 @@ export interface CandlePayload {
   asOf: number;
   stale: boolean;
 }
+

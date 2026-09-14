@@ -3,18 +3,42 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { formatINR } from "@/lib/market-data";
 import type { CandleBar, LiveQuote, MarketSnapshot } from "@/lib/types";
 import { Reveal, SectionHeading } from "./Primitives";
 import MiniCandles from "./MiniCandles";
 import { useMarketTheme } from "./ThemeContext";
 
 const YAHOO_SYM: Record<string, string> = {
-  "NIFTY 50": "^NSEI",
-  SENSEX: "^BSESN",
-  "NIFTY BANK": "^NSEBANK",
-  "NIFTY IT": "^CNXIT",
+  "XAU/USD": "GC=F",
+  "EUR/USD": "EURUSD=X",
+  "GBP/USD": "GBPUSD=X",
+  "USD/JPY": "USDJPY=X",
 };
+
+const CARD_ORDER = ["XAU/USD", "EUR/USD", "GBP/USD", "USD/JPY"];
+
+function formatPairPrice(v: number | null, symbol: string) {
+  if (v == null || isNaN(v)) return "—";
+  if (symbol === "XAU/USD") {
+    return `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  if (symbol === "USD/JPY") {
+    return v.toFixed(2);
+  }
+  return v.toFixed(4);
+}
+
+function formatPairChange(change: number, symbol: string) {
+  const sign = change >= 0 ? "+" : "−";
+  const abs = Math.abs(change);
+  if (symbol === "XAU/USD") {
+    return `${sign}$${abs.toFixed(2)}`;
+  }
+  if (symbol === "USD/JPY") {
+    return `${sign}${abs.toFixed(2)}`;
+  }
+  return `${sign}${abs.toFixed(4)}`;
+}
 
 /* smooth count-up that always continues from the previous displayed value */
 function useCountUp(target: number | null, active: boolean, duration = 1100) {
@@ -24,7 +48,7 @@ function useCountUp(target: number | null, active: boolean, duration = 1100) {
 
   useEffect(() => {
     if (target == null || !active) return;
-    const from = targetRef.current == null ? target * 0.965 : fromRef.current;
+    const from = targetRef.current == null ? target * 0.985 : fromRef.current;
     targetRef.current = target;
     let raf: number;
     const start = performance.now();
@@ -120,8 +144,13 @@ function IndexCard({
         />
         <div className="flex items-start justify-between">
           <div>
-            <div className="font-data text-[11px] font-semibold tracking-[0.14em] text-muted-foreground">
-              {idx.symbol}
+            <div className="flex items-center gap-1.5">
+              <span className="font-data text-[12px] font-bold tracking-[0.14em] text-foreground">
+                {idx.symbol}
+              </span>
+              <span className="rounded bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.5 text-[8px] font-bold tracking-wider text-amber-300">
+                {idx.source || "OANDA"}
+              </span>
             </div>
             <div className="mt-0.5 text-[11px] text-muted-foreground/70">{idx.name}</div>
           </div>
@@ -141,11 +170,17 @@ function IndexCard({
             up ? "text-emerald-300" : "text-rose-300"
           }`}
         >
-          {animated != null ? formatINR(animated) : "—"}
+          {animated != null ? formatPairPrice(animated, idx.symbol) : "—"}
         </div>
-        <div className={`mt-0.5 font-data text-xs ${up ? "text-emerald-400/80" : "text-rose-400/80"}`}>
-          {up ? "+" : "−"}
-          {formatINR(Math.abs(idx.change))} pts
+        <div className="mt-0.5 flex items-center justify-between font-data text-xs">
+          <span className={up ? "text-emerald-400/80" : "text-rose-400/80"}>
+            {formatPairChange(idx.change, idx.symbol)}
+          </span>
+          {idx.bid != null && idx.ask != null && (
+            <span className="text-[10px] text-muted-foreground">
+              B: {idx.bid.toFixed(idx.precision ?? 2)} / A: {idx.ask.toFixed(idx.precision ?? 2)}
+            </span>
+          )}
         </div>
 
         <div className="mt-4">
@@ -155,8 +190,6 @@ function IndexCard({
     </motion.div>
   );
 }
-
-const CARD_ORDER = ["NIFTY 50", "SENSEX", "NIFTY BANK", "NIFTY IT"];
 
 export default function Indices() {
   const [snap, setSnap] = useState<MarketSnapshot | null>(null);
@@ -183,7 +216,7 @@ export default function Indices() {
     };
   }, []);
 
-  // real intraday candles per index card (5-minute bars)
+  // real intraday candles per pair card (5-minute bars)
   useEffect(() => {
     let alive = true;
     const load = async () => {
@@ -216,24 +249,11 @@ export default function Indices() {
   }, []);
 
   const status = snap?.status;
-  const asOf = snap?.indices[0]?.asOf;
   const feedChip = status
     ? status.state === "open"
-      ? `Live exchange feed · ${status.istTime} IST`
-      : `Last close · ${
-          asOf
-            ? new Intl.DateTimeFormat("en-IN", {
-                timeZone: "Asia/Kolkata",
-                weekday: "short",
-                day: "numeric",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              }).format(new Date(asOf))
-            : status.istDate
-        } IST`
-    : "Connecting to exchange feed…";
+      ? `Live OANDA & interbank feed · ${status.gmtTime}`
+      : `Interbank closed · ${status.detail}`
+    : "Connecting to OANDA interbank feed…";
 
   const cards = CARD_ORDER.map((label) => snap?.indices.find((q) => q.symbol === label)).map(
     (q, i) => ({ q, i }),
@@ -247,13 +267,13 @@ export default function Indices() {
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading
             index="01"
-            kicker="Market Pulse"
+            kicker="Currency & Bullion Pulse"
             title={
               <>
-                Today&apos;s benchmark <span className="text-gradient-gold">temperature</span>
+                Major pairs &amp; <span className="text-gradient-gold">flagship bullion</span>
               </>
             }
-            sub="Headline indices straight from the exchange feed — every quote and every candle is real session data, refreshed as the market moves. Strictly informational."
+            sub="Real-time interbank quotes and 5-minute candlestick trajectories across the world's most traded currency pairs and spot Gold. 100% authentic interbank telemetry."
           />
           <Reveal delay={0.15}>
             <div className="glass flex items-center gap-2 rounded-full px-4 py-2 text-xs text-muted-foreground">

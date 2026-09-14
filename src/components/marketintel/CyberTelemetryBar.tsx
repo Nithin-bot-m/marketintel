@@ -77,7 +77,7 @@ export default function CyberTelemetryBar() {
                 ? "CYBER.INTEL // v3.2"
                 : theme === "matrix"
                 ? "MATRIX.NEURAL // T1"
-                : "ISD.NETWORK // LIVE"}
+                : "MARKETINTEL.FX // LIVE"}
             </span>
           </div>
 

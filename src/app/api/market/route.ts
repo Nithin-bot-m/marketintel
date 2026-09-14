@@ -4,7 +4,7 @@ import { getSnapshot } from "@/lib/yahoo";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// GET /api/market — live exchange snapshot (NSE/BSE quotes via Yahoo Finance).
+// GET /api/market — live exchange snapshot (Forex / Gold / Major pairs via Yahoo Finance).
 // All figures are real market data; `stale: true` signals last-good-cache fallback.
 export async function GET() {
   try {

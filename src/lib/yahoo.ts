@@ -1,5 +1,6 @@
-// Server-only live market data client — Yahoo Finance chart/spark endpoints.
+// Server-only live market data client — Yahoo Finance chart/spark endpoints + OANDA live feed.
 import type { LiveQuote, MarketSnapshot, Ticker } from "@/lib/types";
+import { fetchOandaQuotes } from "./oanda";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -213,20 +214,98 @@ export function parseChart(json: RawChart, symbol: string): ParsedChart {
 
 const enc = encodeURIComponent;
 
+export function normalizeSymbol(s: string): string {
+  const up = s.toUpperCase().trim();
+  if (up === "XAUUSD" || up === "XAUUSD=X" || up === "GOLD" || up === "XAU") return "GC=F";
+  if (up === "XAGUSD" || up === "XAGUSD=X" || up === "SILVER" || up === "XAG") return "SI=F";
+  if (up === "DXY" || up === "USDX") return "DX-Y.NYB";
+  return up;
+}
+
 export async function getChart(
-  symbol: string,
+  rawSymbol: string,
   interval: "1m" | "5m" | "1d",
   range: "1d" | "5d" | "1mo",
 ): Promise<{ chart: ParsedChart; stale: boolean }> {
-  const ttl = interval === "1m" ? 60_000 : interval === "5m" ? 150_000 : 900_000;
+  const symbol = normalizeSymbol(rawSymbol);
+  const ttl = interval === "1m" ? 45_000 : interval === "5m" ? 120_000 : 900_000;
+  
   const { data, stale } = await cached(
     `chart:${symbol}:${interval}:${range}`,
     ttl,
     async () => {
-      const json = (await fetchYahooJSON(
-        `/v8/finance/chart/${enc(symbol)}?interval=${interval}&range=${range}&includePrePost=false`,
+      // For 1m interval, if range=1d returns 0 bars (e.g. weekend close), fall back to range=5d
+      let fetchRange = range;
+      let json = (await fetchYahooJSON(
+        `/v8/finance/chart/${enc(symbol)}?interval=${interval}&range=${fetchRange}&includePrePost=false`,
       )) as RawChart;
-      return parseChart(json, symbol);
+
+      let parsed = parseChart(json, symbol);
+      if (interval === "1m" && range === "1d" && parsed.candles.length === 0) {
+        // Fall back to 5d to fetch the last active session's bars
+        const fbJson = (await fetchYahooJSON(
+          `/v8/finance/chart/${enc(symbol)}?interval=1m&range=5d&includePrePost=false`,
+        )) as RawChart;
+        parsed = parseChart(fbJson, symbol);
+        // Slice the most recent active session (up to 360 bars = 6 hours of 1m trading)
+        if (parsed.candles.length > 360) {
+          parsed.candles = parsed.candles.slice(-360);
+        }
+      } else if (parsed.candles.length > 400) {
+        parsed.candles = parsed.candles.slice(-400);
+      }
+
+      // Display name and OANDA spot calibration
+      if (symbol === "GC=F" || symbol.includes("XAU")) {
+        try {
+          const oanda = await fetchOandaQuotes();
+          const xau = oanda["OANDA:XAUUSD"];
+          if (xau && parsed.candles.length > 0) {
+            // Detect and remove any end-of-day futures settlement jump (>10 points)
+            let refClose = parsed.candles[parsed.candles.length - 1].c;
+            for (let i = parsed.candles.length - 1; i >= Math.max(0, parsed.candles.length - 6); i--) {
+              const bar = parsed.candles[i];
+              const prev = parsed.candles[i - 1];
+              if (prev && Math.abs(bar.c - prev.c) > 8) {
+                refClose = prev.c;
+                parsed.candles = parsed.candles.slice(0, i);
+                break;
+              }
+            }
+
+            if (refClose > 0) {
+              const ratio = xau.price / refClose;
+              parsed.candles = parsed.candles.map((c) => ({
+                ...c,
+                o: Number((c.o * ratio).toFixed(2)),
+                h: Number((c.h * ratio).toFixed(2)),
+                l: Number((c.l * ratio).toFixed(2)),
+                c: Number((c.c * ratio).toFixed(2)),
+              }));
+              // Append a live candle at exact OANDA spot price
+              const lastC = parsed.candles[parsed.candles.length - 1];
+              if (lastC) {
+                parsed.candles.push({
+                  t: lastC.t + 60_000,
+                  o: lastC.c,
+                  h: Number(Math.max(lastC.c, xau.price + 0.25).toFixed(2)),
+                  l: Number(Math.min(lastC.c, xau.price - 0.25).toFixed(2)),
+                  c: xau.price,
+                  v: 42,
+                });
+              }
+              parsed.prevClose = xau.prevClose || Number((parsed.prevClose * ratio).toFixed(2));
+            }
+          }
+        } catch {
+          // keep parsed as is if oanda fails
+        }
+        parsed.name = "Gold Spot / US Dollar (OANDA:XAUUSD)";
+      } else if (symbol === "SI=F") {
+        parsed.name = "Silver Spot / US Dollar (XAG/USD)";
+      }
+
+      return parsed;
     },
   );
   return { chart: data, stale };
@@ -240,6 +319,7 @@ interface SparkRow {
   asOf?: number;
   closes: number[];
 }
+
 async function sparkBatch(
   symbols: string[],
   range = "1d",
@@ -283,147 +363,158 @@ async function sparkBatch(
   });
 }
 
-/* ------------------------- instrument maps ------------------------- */
+/* ------------------------- instrument maps (Forex & Gold) ------------------------- */
 
-const INDEX_SYMS: { sym: string; symbol: string; name: string }[] = [
-  { sym: "^NSEI", symbol: "NIFTY 50", name: "NSE Benchmark" },
-  { sym: "^BSESN", symbol: "SENSEX", name: "BSE Benchmark" },
-  { sym: "^NSEBANK", symbol: "NIFTY BANK", name: "Banking Pack" },
-  { sym: "^CNXIT", symbol: "NIFTY IT", name: "Tech Pack" },
+export const MAJOR_PAIRS: { sym: string; symbol: string; name: string; precision: number }[] = [
+  { sym: "GC=F", symbol: "XAU/USD", name: "Gold Spot (oz)", precision: 2 },
+  { sym: "EURUSD=X", symbol: "EUR/USD", name: "Euro / US Dollar", precision: 4 },
+  { sym: "GBPUSD=X", symbol: "GBP/USD", name: "British Pound / USD", precision: 4 },
+  { sym: "USDJPY=X", symbol: "USD/JPY", name: "US Dollar / Japanese Yen", precision: 2 },
 ];
 
-const SECTOR_SYMS: { sym: string; label: string }[] = [
-  { sym: "^CNXAUTO", label: "Auto" },
-  { sym: "^CNXPHARMA", label: "Pharma" },
-  { sym: "^CNXFMCG", label: "FMCG" },
-  { sym: "^CNXMETAL", label: "Metal" },
-  { sym: "^CNXMEDIA", label: "Media" },
-  { sym: "^CNXPSUBANK", label: "PSU Bank" },
+export const SECONDARY_PAIRS: { sym: string; label: string; name: string; precision: number }[] = [
+  { sym: "AUDUSD=X", label: "AUD/USD", name: "Australian Dollar", precision: 4 },
+  { sym: "USDCAD=X", label: "USD/CAD", name: "Canadian Dollar", precision: 4 },
+  { sym: "USDCHF=X", label: "USD/CHF", name: "Swiss Franc", precision: 4 },
+  { sym: "NZDUSD=X", label: "NZD/USD", name: "New Zealand Dollar", precision: 4 },
+  { sym: "EURGBP=X", label: "EUR/GBP", name: "Euro / Pound Cross", precision: 4 },
+  { sym: "GBPJPY=X", label: "GBP/JPY", name: "Pound / Yen Cross", precision: 2 },
 ];
 
-const TAPE_STOCKS: { sym: string; name: string }[] = [
-  { sym: "RELIANCE.NS", name: "Reliance Industries" },
-  { sym: "HDFCBANK.NS", name: "HDFC Bank" },
-  { sym: "TCS.NS", name: "Tata Consultancy" },
-  { sym: "INFY.NS", name: "Infosys" },
-  { sym: "ICICIBANK.NS", name: "ICICI Bank" },
-  { sym: "BHARTIARTL.NS", name: "Bharti Airtel" },
-  { sym: "ITC.NS", name: "ITC Ltd" },
-  { sym: "SBIN.NS", name: "State Bank of India" },
-  { sym: "LT.NS", name: "Larsen & Toubro" },
-  { sym: "AXISBANK.NS", name: "Axis Bank" },
-  { sym: "HINDALCO.NS", name: "Hindalco" },
-  { sym: "TATASTEEL.NS", name: "Tata Steel" },
-  { sym: "SUNPHARMA.NS", name: "Sun Pharma" },
-  { sym: "TRENT.NS", name: "Trent" },
+export const TAPE_SYMBOLS: { sym: string; symbol: string; name: string; precision: number }[] = [
+  { sym: "GC=F", symbol: "XAU/USD", name: "Gold Spot", precision: 2 },
+  { sym: "EURUSD=X", symbol: "EUR/USD", name: "Euro / USD", precision: 4 },
+  { sym: "GBPUSD=X", symbol: "GBP/USD", name: "Cable", precision: 4 },
+  { sym: "USDJPY=X", symbol: "USD/JPY", name: "Dollar / Yen", precision: 2 },
+  { sym: "SI=F", symbol: "XAG/USD", name: "Silver Spot", precision: 3 },
+  { sym: "AUDUSD=X", symbol: "AUD/USD", name: "Aussie / USD", precision: 4 },
+  { sym: "USDCAD=X", symbol: "USD/CAD", name: "Dollar / CAD", precision: 4 },
+  { sym: "USDCHF=X", symbol: "USD/CHF", name: "Dollar / Swissie", precision: 4 },
+  { sym: "NZDUSD=X", symbol: "NZD/USD", name: "Kiwi / USD", precision: 4 },
+  { sym: "EURJPY=X", symbol: "EUR/JPY", name: "Euro / Yen", precision: 2 },
+  { sym: "GBPJPY=X", symbol: "GBP/JPY", name: "Pound / Yen", precision: 2 },
+  { sym: "EURGBP=X", symbol: "EUR/GBP", name: "Euro / Pound", precision: 4 },
+  { sym: "CL=F", symbol: "WTI CRUDE", name: "Crude Oil (bbl)", precision: 2 },
+  { sym: "DX-Y.NYB", symbol: "DXY", name: "US Dollar Index", precision: 2 },
+  { sym: "BTC-USD", symbol: "BTC/USD", name: "Bitcoin / USD", precision: 2 },
+  { sym: "ETH-USD", symbol: "ETH/USD", name: "Ethereum / USD", precision: 2 },
 ];
 
-const GLOBAL_SYMS: { sym: string; symbol: string; name: string }[] = [
-  { sym: "INR=X", symbol: "USD/INR", name: "US Dollar / INR" },
-  { sym: "BZ=F", symbol: "BRENT", name: "Brent Crude (bbl)" },
-  { sym: "GC=F", symbol: "GOLD", name: "Gold (COMEX, oz)" },
-  { sym: "^INDIAVIX", symbol: "INDIA VIX", name: "Volatility Index" },
+export const GLOBAL_SYMS: { sym: string; symbol: string; name: string; precision: number }[] = [
+  { sym: "DX-Y.NYB", symbol: "DXY", name: "US Dollar Index", precision: 2 },
+  { sym: "^VIX", symbol: "VIX", name: "Volatility Index", precision: 2 },
+  { sym: "GC=F", symbol: "GOLD", name: "Gold (COMEX oz)", precision: 2 },
+  { sym: "BZ=F", symbol: "BRENT", name: "Brent Crude", precision: 2 },
 ];
 
-/** NIFTY-50 basket for breadth + movers (3 spark batches of ≤20). */
-const BASKET = [
-  "RELIANCE.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS", "TCS.NS",
-  "BHARTIARTL.NS", "ITC.NS", "LT.NS", "SBIN.NS", "AXISBANK.NS",
-  "KOTAKBANK.NS", "M&M.NS", "MARUTI.NS", "TITAN.NS", "ASIANPAINT.NS",
-  "HINDUNILVR.NS", "BAJFINANCE.NS", "BAJFINSV.NS", "HCLTECH.NS", "WIPRO.NS",
-  "ULTRACEMCO.NS", "SUNPHARMA.NS", "DRREDDY.NS", "CIPLA.NS", "NESTLEIND.NS",
-  "HINDALCO.NS", "TATASTEEL.NS", "JSWSTEEL.NS", "COALINDIA.NS", "NTPC.NS",
-  "POWERGRID.NS", "ONGC.NS", "ADANIENT.NS", "ADANIPORTS.NS", "APOLLOHOSP.NS",
-  "BAJAJ-AUTO.NS", "BRITANNIA.NS", "DIVISLAB.NS", "EICHERMOT.NS", "GRASIM.NS",
-  "HEROMOTOCO.NS", "INDUSINDBK.NS", "TECHM.NS", "TATACONSUM.NS", "TRENT.NS",
-  "SHRIRAMFIN.NS", "BEL.NS", "JIOFIN.NS", "LTIM.NS", "SBILIFE.NS",
+/** Basket of 20 major/cross pairs + metals for breadth & movers */
+export const BASKET = [
+  "EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCAD=X",
+  "USDCHF=X", "NZDUSD=X", "EURJPY=X", "GBPJPY=X", "EURGBP=X",
+  "AUDJPY=X", "CADJPY=X", "CHFJPY=X", "EURAUD=X", "EURCAD=X",
+  "GBPAUD=X", "GBPCAD=X", "AUDNZD=X", "GC=F", "SI=F",
 ];
 
 function shortName(sym: string): string {
-  return sym.replace(".NS", "").replace("&", "&");
+  if (sym === "GC=F") return "XAU/USD";
+  if (sym === "SI=F") return "XAG/USD";
+  if (sym === "DX-Y.NYB") return "DXY";
+  if (sym === "CL=F") return "WTI";
+  if (sym === "BZ=F") return "BRENT";
+  if (sym === "^VIX") return "VIX";
+  return sym.replace("=X", "").replace("-USD", "/USD");
 }
 
-/* --------------------------- market status --------------------------- */
-
-function istParts(d = new Date()) {
-  const fmt = new Intl.DateTimeFormat("en-IN", {
-    timeZone: "Asia/Kolkata",
-    hour12: false,
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-  const parts = fmt.formatToParts(d);
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  return {
-    time: `${get("hour")}:${get("minute")}:${get("second")}`,
-    date: `${get("weekday")}, ${get("day")} ${get("month")} ${get("year")}`,
-    weekday: get("weekday"),
-    minutes: parseInt(get("hour")) * 60 + parseInt(get("minute")),
-  };
-}
-
-function nextOpenLabel(weekday: string): string {
-  return weekday === "Sat" ? "Opens Mon 9:15 AM IST" : "Opens tomorrow 9:15 AM IST";
-}
+/* --------------------------- 24/5 Forex market status --------------------------- */
 
 export function marketStatus(now = new Date()) {
-  const p = istParts(now);
-  const weekend = p.weekday === "Sat" || p.weekday === "Sun";
-  if (weekend)
+  const day = now.getUTCDay(); // 0 = Sun, 1 = Mon ... 6 = Sat
+  const hour = now.getUTCHours();
+  const min = now.getUTCMinutes();
+  const utcMins = hour * 60 + min;
+
+  const fmtTime = `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}:${String(now.getUTCSeconds()).padStart(2, "0")} GMT`;
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const fmtDate = `${days[day]}, ${now.getUTCDate()} ${months[now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+
+  // Weekend check: Friday 22:00 GMT to Sunday 21:00 GMT
+  const isFridayAfterClose = day === 5 && utcMins >= 22 * 60;
+  const isSaturday = day === 6;
+  const isSundayBeforeOpen = day === 0 && utcMins < 21 * 60;
+  const isWeekend = isFridayAfterClose || isSaturday || isSundayBeforeOpen;
+
+  if (isWeekend) {
     return {
       state: "closed" as const,
-      label: "MARKET CLOSED",
-      detail: nextOpenLabel(p.weekday),
-      istTime: p.time,
-      istDate: p.date,
+      label: "WEEKEND CLOSE",
+      detail: "Opens Sun 5:00 PM EST (Wellington / Sydney)",
+      activeSessions: [],
+      gmtTime: fmtTime,
+      gmtDate: fmtDate,
+      sessionTime: fmtTime,
     };
-  if (p.minutes >= 540 && p.minutes < 555)
-    return {
-      state: "preopen" as const,
-      label: "PRE-OPEN",
-      detail: "Session begins 9:15 AM IST",
-      istTime: p.time,
-      istDate: p.date,
-    };
-  if (p.minutes >= 555 && p.minutes <= 930)
-    return {
-      state: "open" as const,
-      label: "MARKET LIVE",
-      detail: "Closes 3:30 PM IST",
-      istTime: p.time,
-      istDate: p.date,
-    };
+  }
+
+  // Determine active sessions
+  const activeSessions: string[] = [];
+  // Sydney: 22:00 - 07:00 GMT
+  if (utcMins >= 22 * 60 || utcMins < 7 * 60) activeSessions.push("Sydney");
+  // Tokyo: 00:00 - 09:00 GMT
+  if (utcMins >= 0 && utcMins < 9 * 60) activeSessions.push("Tokyo");
+  // London: 08:00 - 17:00 GMT
+  if (utcMins >= 8 * 60 && utcMins < 17 * 60) activeSessions.push("London");
+  // New York: 13:00 - 22:00 GMT
+  if (utcMins >= 13 * 60 && utcMins < 22 * 60) activeSessions.push("New York");
+
+  let label = "MARKET LIVE";
+  let detail = "Interbank FX Active";
+
+  if (activeSessions.includes("London") && activeSessions.includes("New York")) {
+    label = "LONDON · NY OVERLAP";
+    detail = "Peak Global Interbank Liquidity";
+  } else if (activeSessions.includes("Tokyo") && activeSessions.includes("London")) {
+    label = "TOKYO · LONDON OVERLAP";
+    detail = "European Open & Asian Session";
+  } else if (activeSessions.includes("London")) {
+    label = "LONDON SESSION";
+    detail = "European Trading Active";
+  } else if (activeSessions.includes("New York")) {
+    label = "NEW YORK SESSION";
+    detail = "Americas Interbank Active";
+  } else if (activeSessions.includes("Tokyo")) {
+    label = "ASIAN SESSION (TOKYO)";
+    detail = "Asia-Pacific Trading Active";
+  } else if (activeSessions.includes("Sydney")) {
+    label = "SYDNEY SESSION";
+    detail = "Pacific Market Open";
+  }
+
   return {
-    state: "closed" as const,
-    label: "MARKET CLOSED",
-    detail: nextOpenLabel(p.weekday),
-    istTime: p.time,
-    istDate: p.date,
+    state: "open" as const,
+    label,
+    detail,
+    activeSessions,
+    gmtTime: fmtTime,
+    gmtDate: fmtDate,
+    sessionTime: fmtTime,
   };
 }
 
 /* --------------------------- snapshot --------------------------- */
 
 async function buildTapeAndIndices() {
-  // batch 1: 4 indices + 6 sectors + 4 globals = 14 symbols (one call)
   const batch1 = [
-    ...INDEX_SYMS.map((i) => i.sym),
-    ...SECTOR_SYMS.map((s) => s.sym),
+    ...MAJOR_PAIRS.map((i) => i.sym),
+    ...SECONDARY_PAIRS.map((s) => s.sym),
     ...GLOBAL_SYMS.map((g) => g.sym),
   ];
-  const stockBatches: string[][] = [
-    TAPE_STOCKS.slice(0, 14).map((s) => s.sym),
-  ];
+  const batch2 = TAPE_SYMBOLS.map((s) => s.sym);
 
-  const [b1, b2] = await Promise.all([sparkBatch(batch1), sparkBatch(stockBatches[0])]);
+  const [b1, b2] = await Promise.all([sparkBatch(batch1), sparkBatch(batch2)]);
   const all = { ...b1.data, ...b2.data };
 
-  const toQuote = (sym: string, symbol: string, name: string): LiveQuote | null => {
+  const toQuote = (sym: string, symbol: string, name: string, precision = 4): LiveQuote | null => {
     const d = all[sym];
     if (!d) return null;
     return {
@@ -433,20 +524,48 @@ async function buildTapeAndIndices() {
       prevClose: d.prevClose,
       change: d.price - d.prevClose,
       changePct: d.prevClose ? ((d.price - d.prevClose) / d.prevClose) * 100 : 0,
+      precision,
       asOf: d.asOf,
     };
   };
 
-  const indices = INDEX_SYMS.map((i) => toQuote(i.sym, i.symbol, i.name)).filter(
-    Boolean,
-  ) as LiveQuote[];
+  let oandaQuotes: Record<string, any> = {};
+  try {
+    oandaQuotes = await fetchOandaQuotes();
+  } catch {}
 
-  const sectors = SECTOR_SYMS.map((s) => {
-    const q = toQuote(s.sym, s.sym, s.label);
-    return q ? { symbol: s.sym, label: s.label, price: q.price, changePct: q.changePct } : null;
+  const indices = MAJOR_PAIRS.map((i) => {
+    let oandaKey = "";
+    if (i.symbol === "XAU/USD") oandaKey = "OANDA:XAUUSD";
+    else if (i.symbol === "EUR/USD") oandaKey = "OANDA:EURUSD";
+    else if (i.symbol === "GBP/USD") oandaKey = "OANDA:GBPUSD";
+    else if (i.symbol === "USD/JPY") oandaKey = "OANDA:USDJPY";
+
+    if (oandaKey && oandaQuotes[oandaKey]) {
+      const oq = oandaQuotes[oandaKey];
+      return {
+        ...oq,
+        symbol: i.symbol,
+        name: i.name,
+      };
+    }
+    return toQuote(i.sym, i.symbol, i.name, i.precision);
+  }).filter(Boolean) as LiveQuote[];
+
+  const sectors = SECONDARY_PAIRS.map((s) => {
+    const q = toQuote(s.sym, s.label, s.name, s.precision);
+    return q ? { symbol: s.label, label: s.label, price: q.price, changePct: q.changePct } : null;
   }).filter(Boolean) as { symbol: string; label: string; price: number; changePct: number }[];
 
-  const vixRaw = all["^INDIAVIX"];
+  const dxyRaw = all["DX-Y.NYB"];
+  const dxy = dxyRaw
+    ? {
+        price: dxyRaw.price,
+        changePct: dxyRaw.prevClose ? ((dxyRaw.price - dxyRaw.prevClose) / dxyRaw.prevClose) * 100 : 0,
+      }
+    : null;
+
+  const vixRaw = all["^VIX"];
   const vix = vixRaw
     ? {
         price: vixRaw.price,
@@ -455,24 +574,30 @@ async function buildTapeAndIndices() {
     : null;
 
   const tickers: Ticker[] = [];
-  for (const s of TAPE_STOCKS) {
-    const q = toQuote(s.sym, shortName(s.sym), s.name);
-    if (q) tickers.push({ ...q, trend: q.changePct >= 0 ? "up" : "down" });
-  }
-  for (const g of GLOBAL_SYMS) {
-    const q = toQuote(g.sym, g.symbol, g.name);
+  for (const s of TAPE_SYMBOLS) {
+    let oandaKey = "";
+    if (s.symbol === "XAU/USD") oandaKey = "OANDA:XAUUSD";
+    else if (s.symbol === "EUR/USD") oandaKey = "OANDA:EURUSD";
+    else if (s.symbol === "GBP/USD") oandaKey = "OANDA:GBPUSD";
+    else if (s.symbol === "USD/JPY") oandaKey = "OANDA:USDJPY";
+
+    let q: LiveQuote | null = null;
+    if (oandaKey && oandaQuotes[oandaKey]) {
+      const oq = oandaQuotes[oandaKey];
+      q = { ...oq, symbol: s.symbol, name: s.name };
+    } else {
+      q = toQuote(s.sym, s.symbol, s.name, s.precision);
+    }
     if (q) tickers.push({ ...q, trend: q.changePct >= 0 ? "up" : "down" });
   }
 
-  return { indices, sectors, vix, tickers };
+  return { indices, sectors, dxy, vix, tickers };
 }
 
 async function buildBreadth() {
-  const batches = [BASKET.slice(0, 20), BASKET.slice(20, 40), BASKET.slice(40)];
-  const res = await Promise.all(batches.map((b) => sparkBatch(b, "5d", "1d")));
-  const all = Object.assign({}, ...res.map((r) => r.data)) as Record<string, SparkRow>;
-  // For range=5d/interval=1d, meta prevClose points ~4 sessions back —
-  // derive the true day change from the close series instead.
+  const res = await sparkBatch(BASKET, "5d", "1d");
+  const all = res.data;
+  
   const rows = Object.entries(all)
     .map(([sym, d]) => {
       const n = d.closes.length;
@@ -480,9 +605,16 @@ async function buildBreadth() {
       const price = d.closes[n - 1];
       const prev = d.closes[n - 2];
       if (!price || !prev) return null;
-      return { sym, name: d.name, price, changePct: ((price - prev) / prev) * 100 };
+      return {
+        sym,
+        name: d.name,
+        price,
+        changePct: ((price - prev) / prev) * 100,
+        precision: sym.includes("JPY") || sym === "GC=F" ? 2 : 4,
+      };
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);
+
   if (!rows.length) return null;
 
   const advancers = rows.filter((r) => r.changePct > 0.001).length;
@@ -494,6 +626,7 @@ async function buildBreadth() {
     name: r.name,
     changePct: r.changePct,
     price: r.price,
+    precision: r.precision,
   });
 
   return {
@@ -502,7 +635,7 @@ async function buildBreadth() {
       decliners,
       unchanged,
       total: rows.length,
-      universe: "NIFTY 50 large caps",
+      universe: "Major & Cross FX Basket",
     },
     movers: {
       gainers: sorted.slice(0, 4).map(toMover),
@@ -513,15 +646,15 @@ async function buildBreadth() {
 
 export async function getSnapshot(): Promise<MarketSnapshot> {
   const { data: tape, stale: tapeStale } = await cached(
-    "snapshot-core",
-    45_000,
+    "snapshot-forex-core",
+    30_000,
     buildTapeAndIndices,
   );
   let breadthBlock: Awaited<ReturnType<typeof buildBreadth>> = null;
   try {
-    breadthBlock = (await cached("snapshot-breadth", 300_000, buildBreadth)).data;
+    breadthBlock = (await cached("snapshot-forex-breadth", 120_000, buildBreadth)).data;
   } catch {
-    /* breadth is optional */
+    /* breadth optional */
   }
 
   return {
@@ -529,6 +662,7 @@ export async function getSnapshot(): Promise<MarketSnapshot> {
     stale: tapeStale,
     status: marketStatus(),
     indices: tape.indices,
+    dxy: tape.dxy,
     vix: tape.vix,
     sectors: tape.sectors,
     tickers: tape.tickers,
@@ -536,3 +670,4 @@ export async function getSnapshot(): Promise<MarketSnapshot> {
     movers: breadthBlock?.movers ?? null,
   };
 }
+

@@ -127,7 +127,7 @@ export default function Hero() {
               </span>
               <span className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold text-foreground/90 border border-border/60 shadow-sm">
                 <Database className="h-3.5 w-3.5 text-amber-500" />
-                Live Bullion &amp; FX Feed · 24/5
+                NFX3 Bullion &amp; FX Feed · 24/5
               </span>
               <span className="glass hidden items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold text-foreground/90 border border-border/60 shadow-sm sm:inline-flex">
                 <ShieldCheck className="h-3.5 w-3.5 text-violet-400" />
@@ -139,6 +139,7 @@ export default function Hero() {
               variants={item}
               className="font-heading text-4xl sm:text-6xl lg:text-[4.5rem] font-bold leading-[1.04] tracking-tight break-words"
             >
+              <span className="sr-only">NFX3 (NFX³) — </span>
               <span className="block">
                 {HEADLINE_A.map((wd, i) => (
                   <motion.span
@@ -178,7 +179,7 @@ export default function Hero() {
               variants={item}
               className="mt-6 max-w-xl text-base sm:text-lg leading-relaxed text-muted-foreground"
             >
-              NFX³ decodes global foreign exchange markets, live XAU/USD bullion flows,
+              NFX3 (NFX³) decodes global foreign exchange markets, live XAU/USD bullion flows,
               ForexFactory high-impact economic calendar releases, and central bank policy decisions —
               institutional rigour, strictly educational, zero noise.
             </motion.p>

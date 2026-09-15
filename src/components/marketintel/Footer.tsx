@@ -25,7 +25,7 @@ export default function Footer() {
               </div>
             </a>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              NFX³ Global Markets Intelligence built on verified tier-1 macro sources —
+              NFX3 (NFX³) Global Markets Intelligence (nfx3.com) built on verified tier-1 macro sources —
               Federal Reserve, ECB, BoE, Bank of Japan, CFTC COT positioning, and ForexFactory
               economic indicators — decoded into institutional wraps, real-time calendars, and
               currency trackers 24 hours a day, 5 days a week.
@@ -51,11 +51,11 @@ export default function Footer() {
             {
               h: "Company",
               links: [
-                { name: "About NFX³", href: "#top" },
+                { name: "About NFX3", href: "#top" },
+                { name: "FAQ Knowledge Base", href: "#faq" },
                 { name: "Data Architecture", href: "#pipeline" },
                 { name: "Macro Editorial Policy", href: "#topics" },
                 { name: "Daily FX Wrap", href: "#wrap" },
-                { name: "API Access", href: "#top" },
               ],
             },
             {
@@ -102,8 +102,14 @@ export default function Footer() {
 
         <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} NFX³ —{" "}
-            <span className="text-foreground/80">Global Forex & Bullion Intelligence.</span>
+            © {new Date().getFullYear()} NFX3 (NFX³) —{" "}
+            <a href="https://nfx3.com" className="text-foreground/80 hover:text-amber-500 transition-colors">
+              nfx3.com
+            </a>{" "}
+            · Global Forex & Bullion Intelligence.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Official Domain: <span className="font-mono text-primary font-semibold">https://nfx3.com</span>
           </p>
         </div>
       </div>

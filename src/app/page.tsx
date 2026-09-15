@@ -9,6 +9,7 @@ import IpoTracker from "@/components/marketintel/IpoTracker";
 import Flows from "@/components/marketintel/Flows";
 import Topics from "@/components/marketintel/Topics";
 import Pipeline from "@/components/marketintel/Pipeline";
+import Faq from "@/components/marketintel/Faq";
 import Footer from "@/components/marketintel/Footer";
 import Cursor from "@/components/marketintel/Cursor";
 
@@ -28,6 +29,7 @@ export default function Home() {
           <Flows />
           <Topics />
           <Pipeline />
+          <Faq />
         </main>
         <Footer />
       </div>

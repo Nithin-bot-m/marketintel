@@ -11,6 +11,7 @@ const LINKS = [
   { label: "COT Flows", href: "#flows" },
   { label: "Intelligence", href: "#intel" },
   { label: "FX Guides", href: "#topics" },
+  { label: "FAQ", href: "#faq" },
 ];
 
 export default function Navbar() {
